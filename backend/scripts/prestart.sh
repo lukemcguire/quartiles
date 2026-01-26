@@ -1,13 +1,24 @@
-#! /usr/bin/env bash
+#!/usr/bin/env bash
+
+# Pre-start script to run database migrations and initialize data
 
 set -e
-set -x
 
-# Let the DB start
-python app/backend_pre_start.py
+echo "Running database migrations..."
+cd /app/backend
 
-# Run migrations
-alembic upgrade head
+# Run alembic migrations
+python -m alembic upgrade head
 
-# Create initial data in DB
-python app/initial_data.py
+echo "Initializing database..."
+# Initialize database with first superuser
+python <<'EOF'
+from sqlmodel import Session
+from app.core.db import engine, init_db
+
+with Session(engine) as session:
+    init_db(session)
+    print("Database initialized successfully")
+EOF
+
+echo "Pre-start completed successfully"

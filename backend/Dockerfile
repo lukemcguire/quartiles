@@ -1,45 +1,43 @@
-FROM python:3.10
+# Backend Dockerfile
+# Multi-stage build for Python 3.13 with UV
 
-ENV PYTHONUNBUFFERED=1
+FROM python:3.13-slim AS builder
 
 # Install uv
-# Ref: https://docs.astral.sh/uv/guides/integration/docker/#installing-uv
-COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Compile bytecode
-# Ref: https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
+# Set environment variables
 ENV UV_COMPILE_BYTECODE=1
-
-# uv Cache
-# Ref: https://docs.astral.sh/uv/guides/integration/docker/#caching
 ENV UV_LINK_MODE=copy
 
-WORKDIR /app/
-
-# Place executables in the environment at the front of the path
-# Ref: https://docs.astral.sh/uv/guides/integration/docker/#using-the-environment
-ENV PATH="/app/.venv/bin:$PATH"
+WORKDIR /app/backend
 
 # Install dependencies
-# Ref: https://docs.astral.sh/uv/guides/integration/docker/#intermediate-layers
+COPY pyproject.toml ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --no-install-workspace --package app
+    uv sync --frozen --no-install-project --no-dev
 
-COPY ./backend/scripts /app/backend/scripts
-
-COPY ./backend/pyproject.toml ./backend/alembic.ini /app/backend/
-
-COPY ./backend/app /app/backend/app
+# Copy application code
+COPY . .
 
 # Sync the project
-# Ref: https://docs.astral.sh/uv/guides/integration/docker/#intermediate-layers
 RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --package app
+    uv sync --frozen --no-dev
 
-WORKDIR /app/backend/
+# Production stage
+FROM python:3.13-slim
 
-CMD ["fastapi", "run", "--workers", "4", "app/main.py"]
+WORKDIR /app/backend
+
+# Copy installed packages and application
+COPY --from=builder /app/backend/.venv /app/backend/.venv
+COPY --from=builder /app/backend /app/backend
+
+# Set PATH to use the virtual environment
+ENV PATH="/app/backend/.venv/bin:$PATH"
+
+# Expose port
+EXPOSE 8000
+
+# Default command (can be overridden)
+CMD ["fastapi", "run", "app/main.py", "--host", "0.0.0.0", "--port", "8000"]
