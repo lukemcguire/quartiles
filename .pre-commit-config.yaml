@@ -18,5 +18,13 @@ repos:
     rev: "v0.14.10"
     hooks:
       - id: ruff-check
-        args: [ --exit-non-zero-on-fix ]
+        args: [--exit-non-zero-on-fix]
       - id: ruff-format
+
+  - repo: https://github.com/biomejs/pre-commit
+    rev: "v0.6.1"
+    hooks:
+      - id: biome-check
+        additional_dependencies: ["@biomejs/biome@1.9.1"]
+        files: ^frontend/src/
+        args: ["--config-path", "frontend"]
