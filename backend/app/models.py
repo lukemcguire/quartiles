@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pydantic import EmailStr
 from sqlalchemy import DateTime
@@ -7,7 +7,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 
 def get_datetime_utc() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 # Shared properties
@@ -90,9 +90,7 @@ class Item(ItemBase, table=True):
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
     )
-    owner_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, ondelete="CASCADE"
-    )
+    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, ondelete="CASCADE")
     owner: User | None = Relationship(back_populates="items")
 
 

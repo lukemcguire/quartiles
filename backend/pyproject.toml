@@ -1,5 +1,5 @@
 [project]
-name = "app"
+name = "quartiles"
 version = "0.1.0"
 description = "Quartiles backend API"
 requires-python = ">=3.13,<4.0"
@@ -25,7 +25,6 @@ dependencies = [
 dev = [
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
-    "pre-commit>=4.5.1",
     "ty>=0.0.8",
     "ruff>=0.14.10",
     "prek>=0.2.24,<1.0.0",
@@ -122,7 +121,7 @@ ignore = [
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["D", "S101", "ANN", "BLE", "TRY", "INP001"]
+"app/tests/*" = ["D", "S101", "ANN", "BLE", "TRY", "INP001"]
 
 [tool.ruff.lint.pyupgrade]
 # Preserve types, even if a file imports `from __future__ import annotations`.
@@ -131,7 +130,6 @@ keep-runtime-typing = true
 [tool.coverage.run]
 branch = true
 source = ["app"]
-dynamic_context = "test_function"
 
 [tool.coverage.report]
 skip_empty = true
@@ -140,4 +138,3 @@ sort = "-Cover"
 
 [tool.coverage.html]
 show_contexts = true
-

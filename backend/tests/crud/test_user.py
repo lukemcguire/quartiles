@@ -122,9 +122,7 @@ def test_authenticate_user_with_bcrypt_upgrades_to_argon2(db: Session) -> None:
     # Verify the hash was upgraded to argon2
     assert authenticated_user.hashed_password.startswith("$argon2")
 
-    verified, updated_hash = verify_password(
-        password, authenticated_user.hashed_password
-    )
+    verified, updated_hash = verify_password(password, authenticated_user.hashed_password)
     assert verified
     # Should not need another update since it's already argon2
     assert updated_hash is None

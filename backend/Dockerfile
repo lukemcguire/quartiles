@@ -10,15 +10,16 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
 
-WORKDIR /app/backend
+WORKDIR /app
 
-# Install dependencies
-COPY pyproject.toml ./
+# Install dependencies (workspace setup: root has uv.lock)
+COPY uv.lock pyproject.toml ./
+COPY backend/pyproject.toml ./backend/
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev
 
 # Copy application code
-COPY . .
+COPY backend/ ./backend/
 
 # Sync the project
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -29,12 +30,12 @@ FROM python:3.13-slim
 
 WORKDIR /app/backend
 
-# Copy installed packages and application
-COPY --from=builder /app/backend/.venv /app/backend/.venv
+# Copy installed packages and application from workspace root
+COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/backend /app/backend
 
 # Set PATH to use the virtual environment
-ENV PATH="/app/backend/.venv/bin:$PATH"
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Expose port
 EXPOSE 8000

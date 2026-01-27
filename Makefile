@@ -15,7 +15,7 @@ install: ## Install dependencies and pre-commit hooks
 .PHONY: check
 check: ## Run all code quality checks (backend + frontend)
 	@echo "Running pre-commit hooks..."
-	@uv run pre-commit run -a
+	@uv run prek run -a
 	@echo "Running backend checks..."
 	@$(MAKE) backend-check
 	@echo "Running frontend lint..."
@@ -63,7 +63,7 @@ backend-install: ## Install backend dependencies
 .PHONY: backend-test
 backend-test: ## Run backend tests with pytest
 	@echo "Running backend tests..."
-	@cd backend && uv run python -m pytest app/tests -v --cov=app --cov-report=xml
+	@cd backend && uv run python -m pytest tests -v --cov=app --cov-report=xml
 
 .PHONY: backend-check
 backend-check: ## Run backend code quality checks (ty + ruff)
