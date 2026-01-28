@@ -1,9 +1,14 @@
+# ==============================================================================
+# Global / Setup
+# ==============================================================================
 .PHONY: install
-install: ## Install dependencies and pre-commit hooks
-	@echo "Installing root dev dependencies..."
+install: ## Install all dependencies (backend, frontend, pre-commit)
+	@echo "Installing root Python tools..."
 	@uv sync
 	@echo "Installing backend dependencies..."
-	@cd backend && uv sync
+	@uv sync --directory backend
+	@echo "Installing frontend dependencies..."
+	@bun install
 	@if git rev-parse --git-dir > /dev/null 2>&1; then \
 		echo "Installing pre-commit hooks..."; \
 		uv run pre-commit install; \
@@ -13,36 +18,36 @@ install: ## Install dependencies and pre-commit hooks
 	@echo "Setup complete! Run 'make help' to see available commands."
 
 .PHONY: check
-check: ## Run all code quality checks (backend + frontend)
+check: ## Run all code quality checks (pre-commit + backend + frontend)
 	@echo "Running pre-commit hooks..."
-	@uv run prek run -a
+	@uv run pre-commit run -a
 	@echo "Running backend checks..."
 	@$(MAKE) backend-check
 	@echo "Running frontend lint..."
 	@$(MAKE) frontend-lint
 
 .PHONY: test
-test: backend-test ## Run all tests (alias for backend-test)
+test: backend-test ## Run all tests (currently alias for backend-test)
 
 .PHONY: build
 build: clean-build ## Build backend wheel file
 	@echo "Creating wheel file..."
-	@cd backend && uvx --from build pyproject-build --installer uv
+	@uvx --from build pyproject-build --installer uv backend/
 
 .PHONY: clean-build
 clean-build: ## Clean build artifacts
 	@echo "Removing build artifacts..."
 	@rm -rf backend/dist
 
-# Docker commands
+# ==============================================================================
+# Docker
+# ==============================================================================
 .PHONY: docker-up
 docker-up: ## Start all Docker services
-	@echo "Starting Docker services..."
 	@docker compose up -d
 
 .PHONY: docker-down
 docker-down: ## Stop all Docker services
-	@echo "Stopping Docker services..."
 	@docker compose down
 
 .PHONY: docker-logs
@@ -51,76 +56,82 @@ docker-logs: ## View Docker service logs
 
 .PHONY: docker-build
 docker-build: ## Build Docker images
-	@echo "Building Docker images..."
 	@docker compose build
 
-# Backend commands
+# ==============================================================================
+# Backend (using uv)
+# ==============================================================================
 .PHONY: backend-install
 backend-install: ## Install backend dependencies
-	@echo "Installing backend dependencies..."
-	@cd backend && uv sync
+	@uv sync --directory backend
 
 .PHONY: backend-test
 backend-test: ## Run backend tests with pytest
 	@echo "Running backend tests..."
-	@cd backend && uv run python -m pytest tests -v --cov=app --cov-report=xml
+	@uv run --directory backend python -m pytest tests -v --cov=app --cov-report=xml
 
 .PHONY: backend-check
 backend-check: ## Run backend code quality checks (ty + ruff)
-	@echo "Running backend type checks with ty..."
-	@cd backend && uv run ty check
-	@echo "Running backend linting with ruff..."
-	@cd backend && uv run ruff check app
-	@cd backend && uv run ruff format --check app
+	@echo "Running backend type checks (ty)..."
+	@uv run --directory backend ty check
+	@echo "Running backend linting (ruff)..."
+	@uv run --directory backend ruff check app
+	@uv run --directory backend ruff format --check app
 
 .PHONY: backend-dev
 backend-dev: ## Start backend development server
 	@echo "Starting backend development server..."
-	@cd backend && uv run fastapi dev app/main.py
+	@uv run --directory backend fastapi dev app/main.py
 
-# Database migrations
+# ==============================================================================
+# Database Migrations (Alembic via uv)
+# ==============================================================================
 .PHONY: migrate
 migrate: ## Run database migrations
 	@echo "Running database migrations..."
-	@cd backend && uv run alembic upgrade head
+	@uv run --directory backend alembic upgrade head
 
 .PHONY: migrate-create
-migrate-create: ## Create a new migration (usage: make migrate-create msg="migration message")
+migrate-create: ## Create a new migration (usage: make migrate-create msg="message")
 	@echo "Creating new migration..."
-	@cd backend && uv run alembic revision --autogenerate -m "$(msg)"
+	@uv run --directory backend alembic revision --autogenerate -m "$(msg)"
 
 .PHONY: migrate-down
 migrate-down: ## Rollback last migration
 	@echo "Rolling back last migration..."
-	@cd backend && uv run alembic downgrade -1
+	@uv run --directory backend alembic downgrade -1
 
-# Frontend commands
+# ==============================================================================
+# Frontend (using Bun)
+# ==============================================================================
 .PHONY: frontend-install
 frontend-install: ## Install frontend dependencies
-	@echo "Installing frontend dependencies..."
-	@cd frontend && npm install
+	@bun install
 
 .PHONY: frontend-dev
 frontend-dev: ## Start frontend development server
 	@echo "Starting frontend development server..."
-	@cd frontend && npm run dev
+	@bun run --filter frontend dev
 
 .PHONY: frontend-build
 frontend-build: ## Build frontend for production
 	@echo "Building frontend..."
-	@cd frontend && npm run build
+	@bun run --filter frontend build
 
 .PHONY: frontend-lint
 frontend-lint: ## Lint frontend code
 	@echo "Linting frontend code..."
-	@cd frontend && npm run lint
+	@bunx biome check --write --no-errors-on-unmatched frontend/
 
 .PHONY: generate-client
 generate-client: ## Generate TypeScript API client from OpenAPI schema
 	@echo "Generating TypeScript API client..."
+	@chmod +x scripts/generate-client.sh
 	@./scripts/generate-client.sh
 
-# Development workflow
+# ==============================================================================
+# Development Workflow
+# ==============================================================================
 .PHONY: dev
 dev: ## Start full development environment (requires Docker)
 	@echo "Starting development environment..."

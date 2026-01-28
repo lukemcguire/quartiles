@@ -1,8 +1,8 @@
+import { Link, useLocation } from "@tanstack/react-router"
+import { Home, LogOut, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-import { Link, useLocation } from "@tanstack/react-router"
-import { Home, LogOut, Settings } from "lucide-react"
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
