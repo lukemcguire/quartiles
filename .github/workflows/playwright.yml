@@ -23,7 +23,7 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     # Skip Dependabot PRs unless explicitly triggered by repo owner
-    if: ${{ !github.event.pull_request || !contains(github.event.pull_request.title, 'dependabot') || github.event.pull_request.user.login == 'lukemcguire' }}
+    if: ${{ !github.event.pull_request || github.event.pull_request.user.login != 'dependabot[bot]' || github.event.pull_request.user.login == 'lukemcguire' }}
     # Set job outputs to values from filter step
     outputs:
       changed: ${{ steps.filter.outputs.changed }}
