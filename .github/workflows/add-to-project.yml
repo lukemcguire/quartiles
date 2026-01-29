@@ -7,6 +7,14 @@ on:
       - opened
       - reopened
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   add-to-project:
     name: Add to project

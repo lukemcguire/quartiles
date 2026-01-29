@@ -3,22 +3,28 @@ name: Test Backend
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     types:
       - opened
       - synchronize
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test-backend:
     runs-on: ubuntu-latest
+    # Skip Dependabot PRs unless explicitly triggered by repo owner
+    if: ${{ !github.event.pull_request || !contains(github.event.pull_request.title, 'dependabot') || github.event.pull_request.user.login == 'lukemcguire' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version: "3.13"
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - run: docker compose down -v --remove-orphans
@@ -36,6 +42,19 @@ jobs:
           name: coverage-html
           path: backend/htmlcov
           include-hidden-files: true
+      - name: Store coverage XML
+        uses: actions/upload-artifact@v6
+        with:
+          name: coverage-xml
+          path: backend/coverage.xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./backend/coverage.xml
+          flags: backend
+          name: backend-coverage-${{ github.sha }}
+          fail_ci_if_error: false
+          token: # No token needed - using tokenless upload for public repo
       - name: Coverage report
         run: uv run coverage report --fail-under=90
         working-directory: backend

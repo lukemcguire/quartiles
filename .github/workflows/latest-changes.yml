@@ -3,10 +3,24 @@ name: Latest Changes
 on:
   pull_request_target:
     branches:
-      - master
+      - main
     types:
       - closed
   workflow_dispatch:
+    inputs:
+      number:
+        description: PR number
+        required: true
+      debug_enabled:
+        description: "Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)"
+        required: false
+        default: "false"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
     inputs:
       number:
         description: PR number
