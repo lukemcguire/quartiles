@@ -5,7 +5,9 @@
 set -e
 
 echo "Running database migrations..."
-cd /app/backend
+if [ -d "/app/backend" ]; then
+  cd /app/backend
+fi
 
 # Run alembic migrations
 python -m alembic upgrade head
