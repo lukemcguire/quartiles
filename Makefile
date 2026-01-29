@@ -2,7 +2,7 @@
 # Global / Setup
 # ==============================================================================
 .PHONY: install
-install: ## Install all dependencies (backend, frontend, pre-commit)
+install: ## Install all dependencies (backend, frontend, prek)
 	@echo "Installing root Python tools..."
 	@uv sync
 	@echo "Installing backend dependencies..."
@@ -11,16 +11,16 @@ install: ## Install all dependencies (backend, frontend, pre-commit)
 	@bun install
 	@if git rev-parse --git-dir > /dev/null 2>&1; then \
 		echo "Installing pre-commit hooks..."; \
-		uv run pre-commit install; \
+		uv run prek install -f; \
 	else \
 		echo "Not a git repository - skipping pre-commit hooks"; \
 	fi
 	@echo "Setup complete! Run 'make help' to see available commands."
 
 .PHONY: check
-check: ## Run all code quality checks (pre-commit + backend + frontend)
-	@echo "Running pre-commit hooks..."
-	@uv run pre-commit run -a
+check: ## Run all code quality checks (prek + backend + frontend)
+	@echo "Running prek hooks..."
+	@uv run prek run --all-files
 	@echo "Running backend checks..."
 	@$(MAKE) backend-check
 	@echo "Running frontend lint..."
