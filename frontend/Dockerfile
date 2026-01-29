@@ -2,7 +2,7 @@
 # Multi-stage build: npm build + nginx serve
 
 # Development stage
-FROM node:20-alpine AS development
+FROM node:25-alpine AS development
 
 WORKDIR /app/frontend
 
@@ -23,7 +23,7 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
 
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:25-alpine AS builder
 
 WORKDIR /app/frontend
 
