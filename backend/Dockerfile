@@ -28,6 +28,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Production stage
 FROM python:3.13-slim
 
+# Install curl for health checks
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app/backend
 
 # Copy installed packages and application from workspace root

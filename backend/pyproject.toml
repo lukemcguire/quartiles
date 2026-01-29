@@ -43,7 +43,7 @@ python = "../.venv"
 python-version = "3.13"
 
 [tool.pytest.ini_options]
-testpaths = ["app/tests"]
+testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 120
