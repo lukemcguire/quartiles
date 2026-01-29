@@ -13,38 +13,24 @@ export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
 
-export type ItemCreate = {
-    title: string;
-    description?: (string | null);
-};
-
-export type ItemPublic = {
-    title: string;
-    description?: (string | null);
-    id: string;
-    owner_id: string;
-    created_at?: (string | null);
-};
-
-export type ItemsPublic = {
-    data: Array<ItemPublic>;
-    count: number;
-};
-
-export type ItemUpdate = {
-    title?: (string | null);
-    description?: (string | null);
-};
-
+/**
+ * Generic message response.
+ */
 export type Message = {
     message: string;
 };
 
+/**
+ * Schema for password reset with token.
+ */
 export type NewPassword = {
     token: string;
     new_password: string;
 };
 
+/**
+ * Schema for creating a user via private API.
+ */
 export type PrivateUserCreate = {
     email: string;
     password: string;
@@ -52,16 +38,25 @@ export type PrivateUserCreate = {
     is_verified?: boolean;
 };
 
+/**
+ * OAuth2 token response.
+ */
 export type Token = {
     access_token: string;
     token_type?: string;
 };
 
+/**
+ * Schema for password update request.
+ */
 export type UpdatePassword = {
     current_password: string;
     new_password: string;
 };
 
+/**
+ * Schema for creating a new user.
+ */
 export type UserCreate = {
     email: string;
     is_active?: boolean;
@@ -70,6 +65,9 @@ export type UserCreate = {
     password: string;
 };
 
+/**
+ * Public user information returned by API.
+ */
 export type UserPublic = {
     email: string;
     is_active?: boolean;
@@ -79,17 +77,26 @@ export type UserPublic = {
     created_at?: (string | null);
 };
 
+/**
+ * Schema for user self-registration.
+ */
 export type UserRegister = {
     email: string;
     password: string;
     full_name?: (string | null);
 };
 
+/**
+ * List of public user information with pagination count.
+ */
 export type UsersPublic = {
     data: Array<UserPublic>;
     count: number;
 };
 
+/**
+ * Schema for updating a user (admin).
+ */
 export type UserUpdate = {
     email?: (string | null);
     is_active?: boolean;
@@ -98,6 +105,9 @@ export type UserUpdate = {
     password?: (string | null);
 };
 
+/**
+ * Schema for users updating their own information.
+ */
 export type UserUpdateMe = {
     full_name?: (string | null);
     email?: (string | null);
@@ -108,38 +118,6 @@ export type ValidationError = {
     msg: string;
     type: string;
 };
-
-export type ItemsReadItemsData = {
-    limit?: number;
-    skip?: number;
-};
-
-export type ItemsReadItemsResponse = (ItemsPublic);
-
-export type ItemsCreateItemData = {
-    requestBody: ItemCreate;
-};
-
-export type ItemsCreateItemResponse = (ItemPublic);
-
-export type ItemsReadItemData = {
-    id: string;
-};
-
-export type ItemsReadItemResponse = (ItemPublic);
-
-export type ItemsUpdateItemData = {
-    id: string;
-    requestBody: ItemUpdate;
-};
-
-export type ItemsUpdateItemResponse = (ItemPublic);
-
-export type ItemsDeleteItemData = {
-    id: string;
-};
-
-export type ItemsDeleteItemResponse = (Message);
 
 export type LoginLoginAccessTokenData = {
     formData: Body_login_login_access_token;

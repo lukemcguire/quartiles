@@ -1,3 +1,5 @@
+"""FastAPI dependency injection utilities for database sessions and authentication."""
+
 from collections.abc import Generator
 from typing import Annotated
 
@@ -17,6 +19,11 @@ reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login/ac
 
 
 def get_db() -> Generator[Session]:
+    """Yield a database session for request handling.
+
+    Yields:
+        Session: A SQLModel database session.
+    """
     with Session(engine) as session:
         yield session
 
@@ -26,6 +33,18 @@ TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 
 def get_current_user(session: SessionDep, token: TokenDep) -> User:
+    """Decode JWT token and return the authenticated user.
+
+    Args:
+        session: Database session dependency.
+        token: JWT token from OAuth2 bearer scheme.
+
+    Returns:
+        User: The authenticated user.
+
+    Raises:
+        HTTPException: If token is invalid, user not found, or user is inactive.
+    """
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[security.ALGORITHM])
         token_data = TokenPayload(**payload)
@@ -46,6 +65,17 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
 def get_current_active_superuser(current_user: CurrentUser) -> User:
+    """Verify the current user has superuser privileges.
+
+    Args:
+        current_user: The currently authenticated user.
+
+    Returns:
+        User: The superuser.
+
+    Raises:
+        HTTPException: If user does not have superuser privileges.
+    """
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="The user doesn't have enough privileges")
     return current_user

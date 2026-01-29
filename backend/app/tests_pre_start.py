@@ -1,3 +1,5 @@
+"""Wait for database to be ready before running tests."""
+
 import logging
 
 from sqlalchemy import Engine
@@ -20,16 +22,22 @@ wait_seconds = 1
     after=after_log(logger, logging.WARNING),
 )
 def init(db_engine: Engine) -> None:
+    """Initialize database connection with retry logic for tests.
+
+    Args:
+        db_engine: SQLAlchemy database engine.
+    """
     try:
         # Try to create session to check if DB is awake
         with Session(db_engine) as session:
             session.exec(select(1))
-    except Exception as e:
-        logger.error(e)
-        raise e
+    except Exception:
+        logger.exception("Failed to connect to database for tests")
+        raise
 
 
 def main() -> None:
+    """Wait for the database to be ready for tests."""
     logger.info("Initializing service")
     init(engine)
     logger.info("Service finished initializing")

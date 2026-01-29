@@ -1,3 +1,5 @@
+"""FastAPI application entry point with CORS and Sentry configuration."""
+
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
@@ -8,6 +10,14 @@ from app.core.config import settings
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
+    """Generate unique operation IDs for OpenAPI routes.
+
+    Args:
+        route: FastAPI route to generate ID for.
+
+    Returns:
+        str: Unique ID in format "tag-name".
+    """
     return f"{route.tags[0]}-{route.name}"
 
 
@@ -23,7 +33,7 @@ app = FastAPI(
 # Set all CORS enabled origins
 if settings.all_cors_origins:
     app.add_middleware(
-        CORSMiddleware,
+        CORSMiddleware,  # type: ignore[arg-type]
         allow_origins=settings.all_cors_origins,
         allow_credentials=True,
         allow_methods=["*"],

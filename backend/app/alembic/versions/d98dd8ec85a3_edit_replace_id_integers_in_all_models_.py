@@ -23,9 +23,9 @@ def upgrade():
     op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
 
     # Create a new UUID column with a default UUID value
-    op.add_column('user', sa.Column('new_id', postgresql.UUID(as_uuid=True), default=sa.text('uuid_generate_v4()')))
-    op.add_column('item', sa.Column('new_id', postgresql.UUID(as_uuid=True), default=sa.text('uuid_generate_v4()')))
-    op.add_column('item', sa.Column('new_owner_id', postgresql.UUID(as_uuid=True), nullable=True))
+    op.add_column('user', sa.Column('new_id', postgresql.UUID(as_uuid=True), server_default=sa.text('uuid_generate_v4()')))  # type: ignore[arg-type]
+    op.add_column('item', sa.Column('new_id', postgresql.UUID(as_uuid=True), server_default=sa.text('uuid_generate_v4()')))  # type: ignore[arg-type]
+    op.add_column('item', sa.Column('new_owner_id', postgresql.UUID(as_uuid=True), nullable=True))  # type: ignore[arg-type]
 
     # Populate the new columns with UUIDs
     op.execute('UPDATE "user" SET new_id = uuid_generate_v4()')

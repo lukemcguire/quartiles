@@ -1,3 +1,5 @@
+"""Application configuration and environment settings."""
+
 import secrets
 import warnings
 from typing import Annotated, Any, Literal, Self
@@ -14,7 +16,18 @@ from pydantic import (
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def parse_cors(v: Any) -> list[str] | str:
+def parse_cors(v: Any) -> list[str] | str:  # noqa: ANN401
+    """Parse CORS origins from string or list format.
+
+    Args:
+        v: CORS origins as string (comma-separated) or list.
+
+    Returns:
+        list[str] | str: Parsed CORS origins.
+
+    Raises:
+        ValueError: If value is not a valid format.
+    """
     if isinstance(v, str) and not v.startswith("["):
         return [i.strip() for i in v.split(",") if i.strip()]
     if isinstance(v, list | str):
@@ -23,6 +36,8 @@ def parse_cors(v: Any) -> list[str] | str:
 
 
 class Settings(BaseSettings):
+    """Application settings loaded from environment variables."""
+
     model_config = SettingsConfigDict(
         # Use top level .env file (one level above ./backend/)
         env_file="../.env",
@@ -38,9 +53,14 @@ class Settings(BaseSettings):
 
     BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = []
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @property
     def all_cors_origins(self) -> list[str]:
+        """Get all allowed CORS origins including backend and frontend.
+
+        Returns:
+            list[str]: Combined list of all CORS origins.
+        """
         return [str(origin).rstrip("/") for origin in self.BACKEND_CORS_ORIGINS] + [self.FRONTEND_HOST]
 
     PROJECT_NAME: str
@@ -51,9 +71,14 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = ""
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @property
-    def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
+    def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:  # noqa: N802
+        """Build the PostgreSQL database URI.
+
+        Returns:
+            PostgresDsn: The database connection URI.
+        """
         return PostgresDsn.build(
             scheme="postgresql+psycopg",
             username=self.POSTGRES_USER,
@@ -80,9 +105,14 @@ class Settings(BaseSettings):
 
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @property
     def emails_enabled(self) -> bool:
+        """Check if email functionality is enabled.
+
+        Returns:
+            bool: True if SMTP configuration is present.
+        """
         return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
 
     EMAIL_TEST_USER: EmailStr = "test@example.com"
@@ -90,6 +120,15 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_PASSWORD: str
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
+        """Check if a secret has the default 'changethis' value.
+
+        Args:
+            var_name: Name of the variable being checked.
+            value: The secret value to check.
+
+        Raises:
+            ValueError: If the secret is unchanged in non-local environments.
+        """
         if value == "changethis":
             message = (
                 f'The value of {var_name} is "changethis", for security, please change it, at least for deployments.'
@@ -108,4 +147,4 @@ class Settings(BaseSettings):
         return self
 
 
-settings = Settings()  # type: ignore
+settings = Settings()  # type: ignore[call-arg]

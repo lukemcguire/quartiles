@@ -1,3 +1,5 @@
+"""Database engine configuration and initialization."""
+
 from sqlmodel import Session, create_engine, select
 
 from app import crud
@@ -13,6 +15,11 @@ engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
 
 def init_db(session: Session) -> None:
+    """Initialize database with first superuser if it doesn't exist.
+
+    Args:
+        session: Database session.
+    """
     # Tables should be created with Alembic migrations
     # But if you don't want to use migrations, create
     # the tables un-commenting the next lines

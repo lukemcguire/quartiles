@@ -1,3 +1,5 @@
+"""Script to create initial database data (first superuser)."""
+
 import logging
 
 from sqlmodel import Session
@@ -9,11 +11,13 @@ logger = logging.getLogger(__name__)
 
 
 def init() -> None:
+    """Initialize the database with initial data."""
     with Session(engine) as session:
         init_db(session)
 
 
 def main() -> None:
+    """Create initial data in the database."""
     logger.info("Creating initial data")
     init()
     logger.info("Initial data created")

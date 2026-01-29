@@ -13,7 +13,11 @@ from app.models import User
 
 @pytest.fixture(scope="session", autouse=True)
 def db() -> Generator[Session]:
-    """Database session fixture for tests."""
+    """Database session fixture for tests.
+
+    Yields:
+        Session: A database session for test use.
+    """
     with Session(engine) as session:
         init_db(session)
         yield session
@@ -24,6 +28,10 @@ def db() -> Generator[Session]:
 
 @pytest.fixture(scope="module")
 def client() -> Generator[TestClient]:
-    """Test client fixture."""
+    """Test client fixture.
+
+    Yields:
+        TestClient: A FastAPI test client.
+    """
     with TestClient(app) as c:
         yield c

@@ -39,11 +39,8 @@ build-backend = "hatchling.build"
 packages = ["app"]
 
 [tool.ty.environment]
-python = "./.venv"
+python = "../.venv"
 python-version = "3.13"
-
-[[tool.ty.overrides]]
-exclude = ["venv", ".venv", "alembic"]
 
 [tool.pytest.ini_options]
 testpaths = ["app/tests"]
@@ -121,7 +118,7 @@ ignore = [
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"app/tests/*" = ["D", "S101", "ANN", "BLE", "TRY", "INP001"]
+"tests/*" = ["D", "S101", "ANN", "BLE", "TRY", "INP001"]
 
 [tool.ruff.lint.pyupgrade]
 # Preserve types, even if a file imports `from __future__ import annotations`.

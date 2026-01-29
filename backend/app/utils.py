@@ -1,10 +1,12 @@
+"""Email utilities and password reset token management."""
+
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-import emails  # type: ignore
+import emails
 import jwt
 from jinja2 import Template
 from jwt.exceptions import InvalidTokenError
@@ -18,14 +20,24 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class EmailData:
+    """Email data container for subject and HTML content."""
+
     html_content: str
     subject: str
 
 
 def render_email_template(*, template_name: str, context: dict[str, Any]) -> str:
+    """Render an email template with the given context.
+
+    Args:
+        template_name: Name of the template file to render.
+        context: Template context variables.
+
+    Returns:
+        str: Rendered HTML content.
+    """
     template_str = (Path(__file__).parent / "email-templates" / "build" / template_name).read_text()
-    html_content = Template(template_str).render(context)
-    return html_content
+    return Template(template_str).render(context)
 
 
 def send_email(
@@ -34,7 +46,14 @@ def send_email(
     subject: str = "",
     html_content: str = "",
 ) -> None:
-    assert settings.emails_enabled, "no provided configuration for email variables"
+    """Send an email using configured SMTP settings.
+
+    Args:
+        email_to: Recipient email address.
+        subject: Email subject line.
+        html_content: HTML content of the email body.
+    """
+    assert settings.emails_enabled, "no provided configuration for email variables"  # noqa: S101
     message = emails.Message(
         subject=subject,
         html=html_content,
@@ -54,6 +73,14 @@ def send_email(
 
 
 def generate_test_email(email_to: str) -> EmailData:
+    """Generate a test email.
+
+    Args:
+        email_to: Recipient email address.
+
+    Returns:
+        EmailData: Email data with subject and HTML content.
+    """
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - Test email"
     html_content = render_email_template(
@@ -64,6 +91,16 @@ def generate_test_email(email_to: str) -> EmailData:
 
 
 def generate_reset_password_email(email_to: str, email: str, token: str) -> EmailData:
+    """Generate a password reset email.
+
+    Args:
+        email_to: Recipient email address.
+        email: User's email (username).
+        token: Password reset token.
+
+    Returns:
+        EmailData: Email data with subject and HTML content.
+    """
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - Password recovery for user {email}"
     link = f"{settings.FRONTEND_HOST}/reset-password?token={token}"
@@ -81,6 +118,16 @@ def generate_reset_password_email(email_to: str, email: str, token: str) -> Emai
 
 
 def generate_new_account_email(email_to: str, username: str, password: str) -> EmailData:
+    """Generate a new account welcome email.
+
+    Args:
+        email_to: Recipient email address.
+        username: New user's username.
+        password: New user's password (plaintext, for welcome email only).
+
+    Returns:
+        EmailData: Email data with subject and HTML content.
+    """
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - New account for user {username}"
     html_content = render_email_template(
@@ -97,19 +144,34 @@ def generate_new_account_email(email_to: str, username: str, password: str) -> E
 
 
 def generate_password_reset_token(email: str) -> str:
+    """Generate a JWT token for password reset.
+
+    Args:
+        email: User's email address to encode in the token.
+
+    Returns:
+        str: Encoded JWT token.
+    """
     delta = timedelta(hours=settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS)
     now = datetime.now(UTC)
     expires = now + delta
     exp = expires.timestamp()
-    encoded_jwt = jwt.encode(
+    return jwt.encode(
         {"exp": exp, "nbf": now, "sub": email},
         settings.SECRET_KEY,
         algorithm=security.ALGORITHM,
     )
-    return encoded_jwt
 
 
 def verify_password_reset_token(token: str) -> str | None:
+    """Verify a password reset token and extract the email.
+
+    Args:
+        token: JWT token to verify.
+
+    Returns:
+        str | None: Email address if token is valid, None otherwise.
+    """
     try:
         decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=[security.ALGORITHM])
         return str(decoded_token["sub"])

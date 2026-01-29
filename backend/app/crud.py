@@ -1,13 +1,21 @@
-import uuid
-from typing import Any
+"""CRUD operations for database models."""
 
 from sqlmodel import Session, select
 
 from app.core.security import get_password_hash, verify_password
-from app.models import Item, ItemCreate, User, UserCreate, UserUpdate
+from app.models import User, UserCreate, UserUpdate
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
+    """Create a new user.
+
+    Args:
+        session: Database session.
+        user_create: User creation data.
+
+    Returns:
+        User: The created user.
+    """
     db_obj = User.model_validate(user_create, update={"hashed_password": get_password_hash(user_create.password)})
     session.add(db_obj)
     session.commit()
@@ -15,7 +23,17 @@ def create_user(*, session: Session, user_create: UserCreate) -> User:
     return db_obj
 
 
-def update_user(*, session: Session, db_user: User, user_in: UserUpdate) -> Any:
+def update_user(*, session: Session, db_user: User, user_in: UserUpdate) -> User:
+    """Update an existing user.
+
+    Args:
+        session: Database session.
+        db_user: Existing user to update.
+        user_in: User update data.
+
+    Returns:
+        User: The updated user.
+    """
     user_data = user_in.model_dump(exclude_unset=True)
     extra_data = {}
     if "password" in user_data:
@@ -30,9 +48,17 @@ def update_user(*, session: Session, db_user: User, user_in: UserUpdate) -> Any:
 
 
 def get_user_by_email(*, session: Session, email: str) -> User | None:
+    """Get a user by email address.
+
+    Args:
+        session: Database session.
+        email: Email address to search for.
+
+    Returns:
+        User | None: The user if found, None otherwise.
+    """
     statement = select(User).where(User.email == email)
-    session_user = session.exec(statement).first()
-    return session_user
+    return session.exec(statement).first()
 
 
 # Dummy hash to use for timing attack prevention when user is not found
@@ -41,6 +67,16 @@ DUMMY_HASH = "$argon2id$v=19$m=65536,t=3,p=4$MjQyZWE1MzBjYjJlZTI0Yw$YTU4NGM5ZTZm
 
 
 def authenticate(*, session: Session, email: str, password: str) -> User | None:
+    """Authenticate a user by email and password.
+
+    Args:
+        session: Database session.
+        email: User's email address.
+        password: User's password to verify.
+
+    Returns:
+        User | None: The authenticated user if credentials are valid, None otherwise.
+    """
     db_user = get_user_by_email(session=session, email=email)
     if not db_user:
         # Prevent timing attacks by running password verification even when user doesn't exist
@@ -56,11 +92,3 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
         session.commit()
         session.refresh(db_user)
     return db_user
-
-
-def create_item(*, session: Session, item_in: ItemCreate, owner_id: uuid.UUID) -> Item:
-    db_item = Item.model_validate(item_in, update={"owner_id": owner_id})
-    session.add(db_item)
-    session.commit()
-    session.refresh(db_item)
-    return db_item
