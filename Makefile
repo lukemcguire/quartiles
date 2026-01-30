@@ -27,7 +27,7 @@ check: ## Run all code quality checks (prek + backend + frontend)
 	@$(MAKE) frontend-lint
 
 .PHONY: test
-test: backend-test ## Run all tests (currently alias for backend-test)
+test: backend-test frontend-test ## Run all tests (backend + frontend)
 
 .PHONY: build
 build: clean-build ## Build backend wheel file
@@ -43,7 +43,7 @@ clean-build: ## Clean build artifacts
 # Docker
 # ==============================================================================
 .PHONY: docker-up
-docker-up: ## Start all Docker services
+docker-up: docker-build ## Start all Docker services (rebuilds first)
 	@docker compose up -d
 
 .PHONY: docker-down
@@ -55,8 +55,8 @@ docker-logs: ## View Docker service logs
 	@docker compose logs -f
 
 .PHONY: docker-build
-docker-build: ## Build Docker images
-	@docker compose build
+docker-build: ## Build backend and frontend Docker images
+	@docker compose build backend prestart frontend
 
 # ==============================================================================
 # Backend (using uv)
@@ -82,6 +82,16 @@ backend-check: ## Run backend code quality checks (ty + ruff)
 backend-dev: ## Start backend development server
 	@echo "Starting backend development server..."
 	@uv run --directory backend fastapi dev app/main.py
+
+.PHONY: backend-stop
+backend-stop: ## Stop backend development server gracefully
+	@echo "Stopping backend development server..."
+	@pkill -f "fastapi dev app/main.py" || echo "No backend server running"
+
+.PHONY: backend-kill
+backend-kill: ## Force kill backend development server
+	@echo "Force killing backend development server..."
+	@pkill -9 -f "fastapi dev app/main.py" || echo "No backend server running"
 
 # ==============================================================================
 # Database Migrations (Alembic via uv)
@@ -126,6 +136,16 @@ frontend-dev: ## Start frontend development server
 	@echo "Starting frontend development server..."
 	@bun run --filter frontend dev
 
+.PHONY: frontend-stop
+frontend-stop: ## Stop frontend development server gracefully
+	@echo "Stopping frontend development server..."
+	@pkill -f "vite.*--mode" || pkill -f "bun run.*dev" || echo "No frontend server running"
+
+.PHONY: frontend-kill
+frontend-kill: ## Force kill frontend development server
+	@echo "Force killing frontend development server..."
+	@pkill -9 -f "vite.*--mode" || pkill -9 -f "bun run.*dev" || echo "No frontend server running"
+
 .PHONY: frontend-build
 frontend-build: ## Build frontend for production
 	@echo "Building frontend..."
@@ -135,6 +155,16 @@ frontend-build: ## Build frontend for production
 frontend-lint: ## Lint frontend code
 	@echo "Linting frontend code..."
 	@bunx biome check --write --no-errors-on-unmatched frontend/
+
+.PHONY: frontend-test
+frontend-test: ## Run frontend tests with Playwright
+	@echo "Running frontend tests..."
+	@bun run --filter frontend test
+
+.PHONY: frontend-test-ui
+frontend-test-ui: ## Run frontend tests with Playwright UI
+	@echo "Running frontend tests with UI..."
+	@bun run --filter frontend test:ui
 
 .PHONY: generate-client
 generate-client: ## Generate TypeScript API client from OpenAPI schema
@@ -159,6 +189,19 @@ dev: ## Start full development environment (requires Docker)
 	@echo "Start servers with:"
 	@echo "  Backend:  make backend-dev"
 	@echo "  Frontend: make frontend-dev"
+	@echo ""
+	@echo "Stop servers with:"
+	@echo "  Servers:  make stop"
+	@echo "  Backend:  make backend-stop"
+	@echo "  Frontend: make frontend-stop"
+
+.PHONY: stop
+stop: backend-stop frontend-stop ## Stop all development servers gracefully
+	@echo "All servers stopped."
+
+.PHONY: kill
+kill: backend-kill frontend-kill ## Force kill all development servers
+	@echo "All servers force killed."
 
 .PHONY: help
 help:
