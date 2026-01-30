@@ -57,6 +57,115 @@ export const Body_login_login_access_tokenSchema = {
     title: 'Body_login-login_access_token'
 } as const;
 
+export const GameStartRequestSchema = {
+    properties: {
+        device_fingerprint: {
+            type: 'string',
+            title: 'Device Fingerprint'
+        },
+        player_id: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Player Id'
+        }
+    },
+    type: 'object',
+    required: ['device_fingerprint'],
+    title: 'GameStartRequest',
+    description: 'Request to start a new game session.'
+} as const;
+
+export const GameStartResponseSchema = {
+    properties: {
+        session_id: {
+            type: 'string',
+            title: 'Session Id'
+        },
+        player_id: {
+            type: 'string',
+            title: 'Player Id'
+        },
+        display_name: {
+            type: 'string',
+            title: 'Display Name'
+        },
+        tiles: {
+            items: {
+                '$ref': '#/components/schemas/TileSchema'
+            },
+            type: 'array',
+            title: 'Tiles'
+        },
+        already_played: {
+            type: 'boolean',
+            title: 'Already Played'
+        },
+        previous_result: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/PreviousResultSchema'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        }
+    },
+    type: 'object',
+    required: ['session_id', 'player_id', 'display_name', 'tiles', 'already_played'],
+    title: 'GameStartResponse',
+    description: 'Response when starting a new game.'
+} as const;
+
+export const GameSubmitResponseSchema = {
+    properties: {
+        success: {
+            type: 'boolean',
+            title: 'Success'
+        },
+        final_score: {
+            type: 'integer',
+            title: 'Final Score'
+        },
+        solve_time_ms: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Solve Time Ms'
+        },
+        leaderboard_rank: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Leaderboard Rank'
+        },
+        message: {
+            type: 'string',
+            title: 'Message'
+        }
+    },
+    type: 'object',
+    required: ['success', 'final_score', 'message'],
+    title: 'GameSubmitResponse',
+    description: 'Response after submitting/finalizing a game.'
+} as const;
+
 export const HTTPValidationErrorSchema = {
     properties: {
         detail: {
@@ -69,6 +178,103 @@ export const HTTPValidationErrorSchema = {
     },
     type: 'object',
     title: 'HTTPValidationError'
+} as const;
+
+export const HintResponseSchema = {
+    properties: {
+        hint_number: {
+            type: 'integer',
+            title: 'Hint Number'
+        },
+        definition: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Definition'
+        },
+        time_penalty_ms: {
+            type: 'integer',
+            title: 'Time Penalty Ms'
+        },
+        quartiles_remaining: {
+            type: 'integer',
+            title: 'Quartiles Remaining'
+        }
+    },
+    type: 'object',
+    required: ['hint_number', 'time_penalty_ms', 'quartiles_remaining'],
+    title: 'HintResponse',
+    description: 'Response after requesting a hint.'
+} as const;
+
+export const LeaderboardEntrySchemaSchema = {
+    properties: {
+        rank: {
+            type: 'integer',
+            title: 'Rank'
+        },
+        player_id: {
+            type: 'string',
+            title: 'Player Id'
+        },
+        display_name: {
+            type: 'string',
+            title: 'Display Name'
+        },
+        solve_time_ms: {
+            type: 'integer',
+            title: 'Solve Time Ms'
+        }
+    },
+    type: 'object',
+    required: ['rank', 'player_id', 'display_name', 'solve_time_ms'],
+    title: 'LeaderboardEntrySchema',
+    description: 'A single leaderboard entry.'
+} as const;
+
+export const LeaderboardResponseSchema = {
+    properties: {
+        puzzle_id: {
+            type: 'string',
+            title: 'Puzzle Id'
+        },
+        puzzle_date: {
+            type: 'string',
+            format: 'date',
+            title: 'Puzzle Date'
+        },
+        entries: {
+            items: {
+                '$ref': '#/components/schemas/LeaderboardEntrySchema'
+            },
+            type: 'array',
+            title: 'Entries'
+        },
+        total_entries: {
+            type: 'integer',
+            title: 'Total Entries'
+        },
+        player_rank: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Player Rank'
+        }
+    },
+    type: 'object',
+    required: ['puzzle_id', 'puzzle_date', 'entries', 'total_entries'],
+    title: 'LeaderboardResponse',
+    description: 'Leaderboard data for a puzzle.'
 } as const;
 
 export const MessageSchema = {
@@ -103,6 +309,48 @@ export const NewPasswordSchema = {
     description: 'Schema for password reset with token.'
 } as const;
 
+export const PreviousResultSchemaSchema = {
+    properties: {
+        final_score: {
+            type: 'integer',
+            title: 'Final Score'
+        },
+        solve_time_ms: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Solve Time Ms'
+        },
+        words_found: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Words Found'
+        },
+        leaderboard_rank: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Leaderboard Rank'
+        }
+    },
+    type: 'object',
+    required: ['final_score', 'words_found'],
+    title: 'PreviousResultSchema',
+    description: 'Result from a previous game session.'
+} as const;
+
 export const PrivateUserCreateSchema = {
     properties: {
         email: {
@@ -127,6 +375,52 @@ export const PrivateUserCreateSchema = {
     required: ['email', 'password', 'full_name'],
     title: 'PrivateUserCreate',
     description: 'Schema for creating a user via private API.'
+} as const;
+
+export const PuzzleResponseSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            title: 'Id'
+        },
+        date: {
+            type: 'string',
+            format: 'date',
+            title: 'Date'
+        },
+        tiles: {
+            items: {
+                '$ref': '#/components/schemas/TileSchema'
+            },
+            type: 'array',
+            title: 'Tiles'
+        },
+        total_available_points: {
+            type: 'integer',
+            title: 'Total Available Points'
+        }
+    },
+    type: 'object',
+    required: ['id', 'date', 'tiles', 'total_available_points'],
+    title: 'PuzzleResponse',
+    description: 'Puzzle data returned to client.'
+} as const;
+
+export const TileSchemaSchema = {
+    properties: {
+        id: {
+            type: 'integer',
+            title: 'Id'
+        },
+        letters: {
+            type: 'string',
+            title: 'Letters'
+        }
+    },
+    type: 'object',
+    required: ['id', 'letters'],
+    title: 'TileSchema',
+    description: 'A single tile in the puzzle grid.'
 } as const;
 
 export const TokenSchema = {
@@ -435,4 +729,65 @@ export const ValidationErrorSchema = {
     type: 'object',
     required: ['loc', 'msg', 'type'],
     title: 'ValidationError'
+} as const;
+
+export const WordValidationRequestSchema = {
+    properties: {
+        word: {
+            type: 'string',
+            title: 'Word'
+        }
+    },
+    type: 'object',
+    required: ['word'],
+    title: 'WordValidationRequest',
+    description: 'Request to validate a submitted word.'
+} as const;
+
+export const WordValidationResponseSchema = {
+    properties: {
+        is_valid: {
+            type: 'boolean',
+            title: 'Is Valid'
+        },
+        points: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Points'
+        },
+        reason: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Reason'
+        },
+        is_quartile: {
+            type: 'boolean',
+            title: 'Is Quartile',
+            default: false
+        },
+        current_score: {
+            type: 'integer',
+            title: 'Current Score'
+        },
+        is_solved: {
+            type: 'boolean',
+            title: 'Is Solved'
+        }
+    },
+    type: 'object',
+    required: ['is_valid', 'current_score', 'is_solved'],
+    title: 'WordValidationResponse',
+    description: 'Response after validating a word.'
 } as const;

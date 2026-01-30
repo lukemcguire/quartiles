@@ -165,3 +165,23 @@ class Dictionary:
 
         _count(self._root)
         return count
+
+
+# Global dictionary instance for easy access
+_global_dictionary: Dictionary | None = None
+
+
+def get_dictionary() -> Dictionary:
+    """Get the global dictionary instance (lazy-loaded).
+
+    This is a convenience function that loads the dictionary on first use
+    and caches it for subsequent calls.
+
+    Returns:
+        Dictionary: The loaded dictionary instance.
+    """
+    global _global_dictionary
+
+    if _global_dictionary is None:
+        _global_dictionary = Dictionary.load()
+    return _global_dictionary

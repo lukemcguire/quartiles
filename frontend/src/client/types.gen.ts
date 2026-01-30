@@ -9,8 +9,70 @@ export type Body_login_login_access_token = {
     client_secret?: (string | null);
 };
 
+/**
+ * Request to start a new game session.
+ */
+export type GameStartRequest = {
+    device_fingerprint: string;
+    player_id?: (string | null);
+};
+
+/**
+ * Response when starting a new game.
+ */
+export type GameStartResponse = {
+    session_id: string;
+    player_id: string;
+    display_name: string;
+    tiles: Array<TileSchema>;
+    already_played: boolean;
+    previous_result?: (PreviousResultSchema | null);
+};
+
+/**
+ * Response after submitting/finalizing a game.
+ */
+export type GameSubmitResponse = {
+    success: boolean;
+    final_score: number;
+    solve_time_ms?: (number | null);
+    leaderboard_rank?: (number | null);
+    message: string;
+};
+
+/**
+ * Response after requesting a hint.
+ */
+export type HintResponse = {
+    hint_number: number;
+    definition?: (string | null);
+    time_penalty_ms: number;
+    quartiles_remaining: number;
+};
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
+};
+
+/**
+ * A single leaderboard entry.
+ */
+export type LeaderboardEntrySchema = {
+    rank: number;
+    player_id: string;
+    display_name: string;
+    solve_time_ms: number;
+};
+
+/**
+ * Leaderboard data for a puzzle.
+ */
+export type LeaderboardResponse = {
+    puzzle_id: string;
+    puzzle_date: string;
+    entries: Array<LeaderboardEntrySchema>;
+    total_entries: number;
+    player_rank?: (number | null);
 };
 
 /**
@@ -29,6 +91,16 @@ export type NewPassword = {
 };
 
 /**
+ * Result from a previous game session.
+ */
+export type PreviousResultSchema = {
+    final_score: number;
+    solve_time_ms?: (number | null);
+    words_found: Array<(string)>;
+    leaderboard_rank?: (number | null);
+};
+
+/**
  * Schema for creating a user via private API.
  */
 export type PrivateUserCreate = {
@@ -36,6 +108,24 @@ export type PrivateUserCreate = {
     password: string;
     full_name: string;
     is_verified?: boolean;
+};
+
+/**
+ * Puzzle data returned to client.
+ */
+export type PuzzleResponse = {
+    id: string;
+    date: string;
+    tiles: Array<TileSchema>;
+    total_available_points: number;
+};
+
+/**
+ * A single tile in the puzzle grid.
+ */
+export type TileSchema = {
+    id: number;
+    letters: string;
 };
 
 /**
@@ -119,6 +209,65 @@ export type ValidationError = {
     type: string;
 };
 
+/**
+ * Request to validate a submitted word.
+ */
+export type WordValidationRequest = {
+    word: string;
+};
+
+/**
+ * Response after validating a word.
+ */
+export type WordValidationResponse = {
+    is_valid: boolean;
+    points?: (number | null);
+    reason?: (string | null);
+    is_quartile?: boolean;
+    current_score: number;
+    is_solved: boolean;
+};
+
+export type GameStartGameData = {
+    requestBody: GameStartRequest;
+};
+
+export type GameStartGameResponse = (GameStartResponse);
+
+export type GameValidateWordData = {
+    requestBody: WordValidationRequest;
+    sessionId: string;
+};
+
+export type GameValidateWordResponse = (WordValidationResponse);
+
+export type GameSubmitGameData = {
+    sessionId: string;
+};
+
+export type GameSubmitGameResponse = (GameSubmitResponse);
+
+export type GameGetHintData = {
+    sessionId: string;
+};
+
+export type GameGetHintResponse = (HintResponse);
+
+export type LeaderboardGetTodaysLeaderboardData = {
+    limit?: number;
+    playerId?: (string | null);
+};
+
+export type LeaderboardGetTodaysLeaderboardResponse = (LeaderboardResponse);
+
+export type LeaderboardGetLeaderboardByDateData = {
+    leaderboardDate: string;
+    limit?: number;
+    playerId?: (string | null);
+};
+
+export type LeaderboardGetLeaderboardByDateResponse = (LeaderboardResponse);
+
 export type LoginLoginAccessTokenData = {
     formData: Body_login_login_access_token;
 };
@@ -150,6 +299,14 @@ export type PrivateCreateUserData = {
 };
 
 export type PrivateCreateUserResponse = (UserPublic);
+
+export type PuzzleGetTodaysPuzzleResponse = (PuzzleResponse);
+
+export type PuzzleGetPuzzleByDateData = {
+    puzzleDate: string;
+};
+
+export type PuzzleGetPuzzleByDateResponse = (PuzzleResponse);
 
 export type UsersReadUsersData = {
     limit?: number;

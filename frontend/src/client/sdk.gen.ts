@@ -3,7 +3,208 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { GameStartGameData, GameStartGameResponse, GameValidateWordData, GameValidateWordResponse, GameSubmitGameData, GameSubmitGameResponse, GameGetHintData, GameGetHintResponse, LeaderboardGetTodaysLeaderboardData, LeaderboardGetTodaysLeaderboardResponse, LeaderboardGetLeaderboardByDateData, LeaderboardGetLeaderboardByDateResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, PuzzleGetTodaysPuzzleResponse, PuzzleGetPuzzleByDateData, PuzzleGetPuzzleByDateResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+
+export class GameService {
+    /**
+     * Start Game
+     * Start a new game session.
+     *
+     * - Gets today's puzzle (creates if doesn't exist)
+     * - Gets or creates player based on device_fingerprint/player_id
+     * - Checks if player already completed today's puzzle
+     * - Creates game session in database with server-recorded start_time
+     * - Returns puzzle tiles only (NOT valid words - security)
+     *
+     * Returns:
+     * GameStartResponse: Session info, player data, and puzzle tiles.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns GameStartResponse Successful Response
+     * @throws ApiError
+     */
+    public static startGame(data: GameStartGameData): CancelablePromise<GameStartGameResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/game/start',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Validate Word
+     * Validate a submitted word.
+     *
+     * Server-authoritative validation:
+     * - Checks if word exists in puzzle's valid word set
+     * - Checks if word was already found
+     * - Returns points if valid, error reason if not
+     * - Records valid word in session
+     * - Checks if solve threshold reached
+     *
+     * Does NOT expose the valid word list to the client.
+     *
+     * Returns:
+     * WordValidationResponse: Validation result with points and score.
+     *
+     * Raises:
+     * HTTPException: If session not found, already completed, or puzzle not found.
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @param data.requestBody
+     * @returns WordValidationResponse Successful Response
+     * @throws ApiError
+     */
+    public static validateWord(data: GameValidateWordData): CancelablePromise<GameValidateWordResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/game/sessions/{session_id}/word',
+            path: {
+                session_id: data.sessionId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Submit Game
+     * Finalize and submit game for leaderboard.
+     *
+     * Server-authoritative scoring:
+     * - Calculates final solve time: now() - start_time + hint_penalties
+     * - Updates leaderboard if solved (score >= 100)
+     * - Enforces first-play-wins (cannot resubmit)
+     * - Client does NOT submit score or time
+     *
+     * Returns:
+     * GameSubmitResponse: Final score, solve time, and leaderboard rank.
+     *
+     * Raises:
+     * HTTPException: If session not found.
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @returns GameSubmitResponse Successful Response
+     * @throws ApiError
+     */
+    public static submitGame(data: GameSubmitGameData): CancelablePromise<GameSubmitGameResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/game/sessions/{session_id}/submit',
+            path: {
+                session_id: data.sessionId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Hint
+     * Request a hint (definition of unfound quartile word).
+     *
+     * - Returns WordNet definition of one unfound quartile word
+     * - Increments hint count in session
+     * - Adds time penalty (30s, 60s, 120s, 240s, 480s)
+     * - Maximum 5 hints per game
+     *
+     * Returns:
+     * HintResponse: Hint number, definition, time penalty, and remaining quartiles.
+     *
+     * Raises:
+     * HTTPException: If session not found, already completed, or max hints reached.
+     * @param data The data for the request.
+     * @param data.sessionId
+     * @returns HintResponse Successful Response
+     * @throws ApiError
+     */
+    public static getHint(data: GameGetHintData): CancelablePromise<GameGetHintResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/game/sessions/{session_id}/hint',
+            path: {
+                session_id: data.sessionId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class LeaderboardService {
+    /**
+     * Get Todays Leaderboard
+     * Get today's leaderboard rankings.
+     *
+     * - Returns top `limit` entries sorted by solve time
+     * - Optionally includes current player's rank if not in top results
+     *
+     * Returns:
+     * LeaderboardResponse: Today's leaderboard entries and player rank.
+     * @param data The data for the request.
+     * @param data.limit
+     * @param data.playerId
+     * @returns LeaderboardResponse Successful Response
+     * @throws ApiError
+     */
+    public static getTodaysLeaderboard(data: LeaderboardGetTodaysLeaderboardData = {}): CancelablePromise<LeaderboardGetTodaysLeaderboardResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/leaderboard/today',
+            query: {
+                limit: data.limit,
+                player_id: data.playerId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Leaderboard By Date
+     * Get leaderboard for a specific date.
+     *
+     * For viewing historical rankings.
+     *
+     * Returns:
+     * LeaderboardResponse: Leaderboard entries and player rank.
+     *
+     * Raises:
+     * HTTPException: If puzzle not found for the given date.
+     * @param data The data for the request.
+     * @param data.leaderboardDate
+     * @param data.limit
+     * @param data.playerId
+     * @returns LeaderboardResponse Successful Response
+     * @throws ApiError
+     */
+    public static getLeaderboardByDate(data: LeaderboardGetLeaderboardByDateData): CancelablePromise<LeaderboardGetLeaderboardByDateResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/leaderboard/{leaderboard_date}',
+            path: {
+                leaderboard_date: data.leaderboardDate
+            },
+            query: {
+                limit: data.limit,
+                player_id: data.playerId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
 
 export class LoginService {
     /**
@@ -167,6 +368,57 @@ export class PrivateService {
             url: '/api/v1/private/users/',
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class PuzzleService {
+    /**
+     * Get Todays Puzzle
+     * Get today's puzzle.
+     *
+     * Creates the puzzle if it doesn't exist yet (lazy generation).
+     * Returns tiles only - valid words are never exposed to client.
+     *
+     * Returns:
+     * PuzzleResponse: Today's puzzle with tiles and metadata.
+     * @returns PuzzleResponse Successful Response
+     * @throws ApiError
+     */
+    public static getTodaysPuzzle(): CancelablePromise<PuzzleGetTodaysPuzzleResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/puzzle/today'
+        });
+    }
+    
+    /**
+     * Get Puzzle By Date
+     * Get puzzle for a specific date.
+     *
+     * For practice mode (post-MVP) or viewing past puzzles.
+     * Only returns puzzles that already exist (no generation).
+     *
+     * Returns:
+     * PuzzleResponse: The requested puzzle with tiles and metadata.
+     *
+     * Raises:
+     * HTTPException: If puzzle not found for the given date.
+     * @param data The data for the request.
+     * @param data.puzzleDate
+     * @returns PuzzleResponse Successful Response
+     * @throws ApiError
+     */
+    public static getPuzzleByDate(data: PuzzleGetPuzzleByDateData): CancelablePromise<PuzzleGetPuzzleByDateResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/puzzle/{puzzle_date}',
+            path: {
+                puzzle_date: data.puzzleDate
+            },
             errors: {
                 422: 'Validation Error'
             }
