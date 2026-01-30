@@ -166,7 +166,7 @@ def _get_existing_session(
         select(GameSession)
         .where(GameSession.player_id == player_id)
         .where(GameSession.puzzle_id == puzzle_id)
-        .where(GameSession.completed_at.is_not(None))
+        .where(GameSession.completed_at.isnot(None))  # type: ignore[attr-defined]
     ).first()
 
 
@@ -274,7 +274,7 @@ async def start_game(
 
     # Get or create today's puzzle
     today = datetime.now(UTC).date()
-    puzzle = await ensure_puzzle_exists_for_date(today, db)
+    puzzle = ensure_puzzle_exists_for_date(today, db)
 
     # Get or create player
     player = _get_or_create_player(db, request.device_fingerprint, request.player_id)

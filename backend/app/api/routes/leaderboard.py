@@ -101,7 +101,7 @@ async def get_todays_leaderboard(
     entries = db.exec(
         select(LeaderboardEntry)
         .where(LeaderboardEntry.puzzle_id == puzzle.id)
-        .order_by(LeaderboardEntry.solve_time_ms)
+        .order_by(LeaderboardEntry.solve_time_ms.asc())  # type: ignore[attr-defined]
         .limit(limit)
     ).all()
 
@@ -177,7 +177,7 @@ async def get_leaderboard_by_date(
     entries = db.exec(
         select(LeaderboardEntry)
         .where(LeaderboardEntry.puzzle_id == puzzle.id)
-        .order_by(LeaderboardEntry.solve_time_ms)
+        .order_by(LeaderboardEntry.solve_time_ms.asc())  # type: ignore[attr-defined]
         .limit(limit)
     ).all()
 

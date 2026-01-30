@@ -86,7 +86,7 @@ async def get_todays_puzzle(
     from datetime import UTC, datetime
 
     today = datetime.now(UTC).date()
-    puzzle = await ensure_puzzle_exists_for_date(today, db)
+    puzzle = ensure_puzzle_exists_for_date(today, db)
     return _puzzle_to_response(puzzle)
 
 

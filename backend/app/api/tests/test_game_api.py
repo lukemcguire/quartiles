@@ -4,8 +4,11 @@ import json
 from datetime import UTC, date, datetime
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from fastapi import status
+from fastapi.testclient import TestClient
+from sqlmodel import Session
+
+from app.models import GameSession, Player, Puzzle
 
 
 class TestNameGenerator:
@@ -36,16 +39,18 @@ class TestNameGenerator:
         from app.services.name_generator import generate_unique_player_name
 
         # Create a set that's likely to cause collision
-        existing_names = {generate_unique_player_name(set()) for _ in range(100)}
+        existing_names_set: set[str] = {
+            name for name in (generate_unique_player_name(set()) for _ in range(100)) if name is not None
+        }
         # Try to generate with very few attempts
         # This might return None if collision occurs
-        _ = generate_unique_player_name(existing_names, max_attempts=2)
+        _ = generate_unique_player_name(existing_names_set, max_attempts=2)
 
 
 class TestGameStart:
     """Tests for POST /game/start endpoint."""
 
-    def test_start_new_game(self, client: pytest.fixture, sample_puzzle: pytest.fixture) -> None:
+    def test_start_new_game(self, client: TestClient, sample_puzzle: Puzzle) -> None:
         """Test starting a new game session."""
         # Mock ensure_puzzle_exists_for_date to return our sample puzzle
         with patch(
@@ -73,9 +78,9 @@ class TestGameStart:
 
     def test_start_game_returning_player(
         self,
-        client: pytest.fixture,
-        sample_puzzle: pytest.fixture,
-        sample_player: pytest.fixture,
+        client: TestClient,
+        sample_puzzle: Puzzle,
+        sample_player: Player,
     ) -> None:
         """Test starting a game with a returning player."""
         with patch(
@@ -98,10 +103,10 @@ class TestGameStart:
 
     def test_start_game_already_played(
         self,
-        client: pytest.fixture,
-        sample_puzzle: pytest.fixture,
-        sample_player: pytest.fixture,
-        session: pytest.fixture,
+        client: TestClient,
+        sample_puzzle: Puzzle,
+        sample_player: Player,
+        session: Session,
     ) -> None:
         """Test starting a game when player already completed today's puzzle."""
         from app.models import GameSession
@@ -146,9 +151,9 @@ class TestWordValidation:
 
     def test_validate_valid_word(
         self,
-        client: pytest.fixture,
-        sample_session: pytest.fixture,
-        sample_puzzle: pytest.fixture,
+        client: TestClient,
+        sample_session: GameSession,
+        sample_puzzle: Puzzle,
     ) -> None:
         """Test validating a valid word."""
         # Get a valid word from the puzzle
@@ -168,8 +173,8 @@ class TestWordValidation:
 
     def test_validate_invalid_word(
         self,
-        client: pytest.fixture,
-        sample_session: pytest.fixture,
+        client: TestClient,
+        sample_session: GameSession,
     ) -> None:
         """Test validating an invalid word."""
         response = client.post(
@@ -185,9 +190,9 @@ class TestWordValidation:
 
     def test_validate_duplicate_word(
         self,
-        client: pytest.fixture,
-        sample_session: pytest.fixture,
-        sample_puzzle: pytest.fixture,
+        client: TestClient,
+        sample_session: GameSession,
+        sample_puzzle: Puzzle,
     ) -> None:
         """Test validating a word that was already found."""
         valid_words = json.loads(sample_puzzle.valid_words_json)
@@ -212,9 +217,9 @@ class TestWordValidation:
 
     def test_validate_word_completed_session(
         self,
-        client: pytest.fixture,
-        sample_session: pytest.fixture,
-        session: pytest.fixture,
+        client: TestClient,
+        sample_session: GameSession,
+        session: Session,
     ) -> None:
         """Test validating a word for a completed session."""
         sample_session.completed_at = datetime.now(UTC)
@@ -230,7 +235,7 @@ class TestWordValidation:
 
     def test_validate_word_session_not_found(
         self,
-        client: pytest.fixture,
+        client: TestClient,
     ) -> None:
         """Test validating a word for a non-existent session."""
         import uuid
@@ -249,9 +254,9 @@ class TestGameSubmit:
 
     def test_submit_solved_game(
         self,
-        client: pytest.fixture,
-        sample_session: pytest.fixture,
-        session: pytest.fixture,
+        client: TestClient,
+        sample_session: GameSession,
+        session: Session,
     ) -> None:
         """Test submitting a solved game."""
         # Set up session as solved
@@ -270,8 +275,8 @@ class TestGameSubmit:
 
     def test_submit_unsolved_game(
         self,
-        client: pytest.fixture,
-        sample_session: pytest.fixture,
+        client: TestClient,
+        sample_session: GameSession,
     ) -> None:
         """Test submitting an unsolved game."""
         response = client.post(f"/api/v1/game/sessions/{sample_session.id}/submit")
@@ -283,9 +288,9 @@ class TestGameSubmit:
 
     def test_submit_already_submitted(
         self,
-        client: pytest.fixture,
-        sample_session: pytest.fixture,
-        session: pytest.fixture,
+        client: TestClient,
+        sample_session: GameSession,
+        session: Session,
     ) -> None:
         """Test submitting a game that was already submitted."""
         sample_session.completed_at = datetime.now(UTC)
@@ -302,7 +307,7 @@ class TestGameSubmit:
 
     def test_submit_session_not_found(
         self,
-        client: pytest.fixture,
+        client: TestClient,
     ) -> None:
         """Test submitting a non-existent session."""
         import uuid
@@ -318,8 +323,8 @@ class TestGetHint:
 
     def test_get_hint(
         self,
-        client: pytest.fixture,
-        sample_session: pytest.fixture,
+        client: TestClient,
+        sample_session: GameSession,
     ) -> None:
         """Test getting a hint."""
         response = client.post(f"/api/v1/game/sessions/{sample_session.id}/hint")
@@ -332,9 +337,9 @@ class TestGetHint:
 
     def test_get_hint_completed_session(
         self,
-        client: pytest.fixture,
-        sample_session: pytest.fixture,
-        session: pytest.fixture,
+        client: TestClient,
+        sample_session: GameSession,
+        session: Session,
     ) -> None:
         """Test getting a hint for a completed session."""
         sample_session.completed_at = datetime.now(UTC)
@@ -347,9 +352,9 @@ class TestGetHint:
 
     def test_get_hint_max_hints(
         self,
-        client: pytest.fixture,
-        sample_session: pytest.fixture,
-        session: pytest.fixture,
+        client: TestClient,
+        sample_session: GameSession,
+        session: Session,
     ) -> None:
         """Test getting a hint when max hints already used."""
         sample_session.hints_used = 5
@@ -363,7 +368,7 @@ class TestGetHint:
 
     def test_get_hint_session_not_found(
         self,
-        client: pytest.fixture,
+        client: TestClient,
     ) -> None:
         """Test getting a hint for a non-existent session."""
         import uuid
@@ -379,8 +384,8 @@ class TestPuzzleEndpoints:
 
     def test_get_todays_puzzle(
         self,
-        client: pytest.fixture,
-        sample_puzzle: pytest.fixture,
+        client: TestClient,
+        sample_puzzle: Puzzle,
     ) -> None:
         """Test getting today's puzzle."""
         with patch(
@@ -402,8 +407,8 @@ class TestPuzzleEndpoints:
 
     def test_get_puzzle_by_date(
         self,
-        client: pytest.fixture,
-        sample_puzzle: pytest.fixture,
+        client: TestClient,
+        sample_puzzle: Puzzle,
     ) -> None:
         """Test getting puzzle by date."""
         response = client.get(f"/api/v1/puzzle/{sample_puzzle.date}")
@@ -414,7 +419,7 @@ class TestPuzzleEndpoints:
 
     def test_get_puzzle_by_date_not_found(
         self,
-        client: pytest.fixture,
+        client: TestClient,
     ) -> None:
         """Test getting puzzle for non-existent date."""
         future_date = date(2099, 12, 31)
@@ -428,7 +433,7 @@ class TestLeaderboardEndpoints:
 
     def test_get_todays_leaderboard_empty(
         self,
-        client: pytest.fixture,
+        client: TestClient,
     ) -> None:
         """Test getting today's leaderboard when empty."""
         response = client.get("/api/v1/leaderboard/today")
@@ -440,10 +445,10 @@ class TestLeaderboardEndpoints:
 
     def test_get_todays_leaderboard_with_entries(
         self,
-        client: pytest.fixture,
-        sample_puzzle: pytest.fixture,
-        sample_player: pytest.fixture,
-        session: pytest.fixture,
+        client: TestClient,
+        sample_puzzle: Puzzle,
+        sample_player: Player,
+        session: Session,
     ) -> None:
         """Test getting today's leaderboard with entries."""
         from app.models import LeaderboardEntry
@@ -472,10 +477,10 @@ class TestLeaderboardEndpoints:
 
     def test_get_leaderboard_by_date(
         self,
-        client: pytest.fixture,
-        sample_puzzle: pytest.fixture,
-        sample_player: pytest.fixture,
-        session: pytest.fixture,
+        client: TestClient,
+        sample_puzzle: Puzzle,
+        sample_player: Player,
+        session: Session,
     ) -> None:
         """Test getting leaderboard by date."""
         from app.models import LeaderboardEntry
@@ -497,10 +502,10 @@ class TestLeaderboardEndpoints:
 
     def test_get_leaderboard_with_player_filter(
         self,
-        client: pytest.fixture,
-        sample_puzzle: pytest.fixture,
-        sample_player: pytest.fixture,
-        session: pytest.fixture,
+        client: TestClient,
+        sample_puzzle: Puzzle,
+        sample_player: Player,
+        session: Session,
     ) -> None:
         """Test getting leaderboard with player_id filter."""
         from app.models import LeaderboardEntry
@@ -521,10 +526,10 @@ class TestLeaderboardEndpoints:
 
     def test_get_leaderboard_limit(
         self,
-        client: pytest.fixture,
-        sample_puzzle: pytest.fixture,
-        sample_player: pytest.fixture,
-        session: pytest.fixture,
+        client: TestClient,
+        sample_puzzle: Puzzle,
+        sample_player: Player,
+        session: Session,
     ) -> None:
         """Test getting leaderboard with limit."""
         from app.models import LeaderboardEntry

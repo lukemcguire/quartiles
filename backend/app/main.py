@@ -1,6 +1,7 @@
 """FastAPI application entry point with CORS and Sentry configuration."""
 
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import sentry_sdk
@@ -27,7 +28,7 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI) -> None:
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan manager.
 
     Handles startup and shutdown events for the FastAPI application.

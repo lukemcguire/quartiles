@@ -378,7 +378,7 @@ class TestPydanticValidation:
     def test_invalid_type(self) -> None:
         """Test validation error on invalid type."""
         with pytest.raises(ValidationError):
-            TileSchema(id="not_an_int", letters="AB")  # type: ignore[arg-type]
+            TileSchema(id="not_an_int", letters="AB")
 
     def test_optional_fields(self) -> None:
         """Test that optional fields can be None."""

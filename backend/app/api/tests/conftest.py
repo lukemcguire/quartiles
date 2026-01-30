@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
@@ -18,8 +19,12 @@ from app.models import (
 
 
 @pytest.fixture(name="engine")
-def engine_fixture() -> Generator:
-    """Create a test database engine."""
+def engine_fixture() -> Generator[Engine]:
+    """Create a test database engine.
+
+    Yields:
+        Engine: The test database engine.
+    """
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -31,7 +36,7 @@ def engine_fixture() -> Generator:
 
 
 @pytest.fixture(name="session")
-def session_fixture(engine: Generator) -> Generator[Session]:
+def session_fixture(engine: Engine) -> Generator[Session]:
     """Create a test database session.
 
     Yields:
@@ -42,8 +47,12 @@ def session_fixture(engine: Generator) -> Generator[Session]:
 
 
 @pytest.fixture(name="client")
-def client_fixture(engine: Generator) -> Generator:
-    """Create a test client with database."""
+def client_fixture(engine: Engine) -> Generator[TestClient]:
+    """Create a test client with database.
+
+    Yields:
+        TestClient: The test client for the FastAPI app.
+    """
 
     def override_get_db():
         with Session(engine) as session:
