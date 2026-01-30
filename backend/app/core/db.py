@@ -1,5 +1,6 @@
 """Database engine configuration and initialization."""
 
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, create_engine, select
 
 from app import crud
@@ -19,6 +20,11 @@ def init_db(session: Session) -> None:
 
     Args:
         session: Database session.
+
+    Note:
+        Handles concurrent initialization gracefully (e.g., when running
+        parallel tests with pytest-xdist) by catching IntegrityError
+        if another worker already created the superuser.
     """
     # Tables should be created with Alembic migrations
     # But if you don't want to use migrations, create
@@ -35,4 +41,10 @@ def init_db(session: Session) -> None:
             password=settings.FIRST_SUPERUSER_PASSWORD,
             is_superuser=True,
         )
-        user = crud.create_user(session=session, user_create=user_in)
+        try:
+            user = crud.create_user(session=session, user_create=user_in)
+        except IntegrityError:
+            # Handle race condition when multiple workers initialize concurrently
+            # If another worker already created the superuser, just fetch it
+            session.rollback()
+            user = session.exec(select(User).where(User.email == settings.FIRST_SUPERUSER)).first()

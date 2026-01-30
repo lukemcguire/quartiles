@@ -66,7 +66,7 @@ def client_fixture(engine: Engine) -> Generator[TestClient]:
     app.dependency_overrides.clear()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def sample_tiles() -> list[dict]:
     """Create sample tile data.
 

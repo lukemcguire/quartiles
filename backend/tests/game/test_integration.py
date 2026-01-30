@@ -8,7 +8,7 @@ from app.game.solver import (
     find_all_valid_words,
     is_quartile_word,
 )
-from app.game.types import GameState
+from app.game.types import GameState, Puzzle
 
 
 class TestDictionaryLoad:
@@ -19,23 +19,23 @@ class TestDictionaryLoad:
         dictionary = Dictionary.load()
         assert len(dictionary) > 0
 
-    def test_dictionary_contains_common_words(self) -> None:
+    def test_dictionary_contains_common_words(self, real_dictionary: Dictionary) -> None:
         """Dictionary contains common English words."""
-        dictionary = Dictionary.load()
+        dictionary = real_dictionary
         assert dictionary.contains("TEST")
         assert dictionary.contains("QUARTILE")
         assert dictionary.contains("PUZZLE")
 
-    def test_dictionary_prefix_checking(self) -> None:
+    def test_dictionary_prefix_checking(self, real_dictionary: Dictionary) -> None:
         """Dictionary supports prefix checking."""
-        dictionary = Dictionary.load()
+        dictionary = real_dictionary
         assert dictionary.contains_prefix("TE")
         assert dictionary.contains_prefix("QUA")
         assert not dictionary.contains_prefix("XYZABC")
 
-    def test_dictionary_definitions(self) -> None:
+    def test_dictionary_definitions(self, real_dictionary: Dictionary) -> None:
         """Dictionary provides definitions for words."""
-        dictionary = Dictionary.load()
+        dictionary = real_dictionary
         definition = dictionary.get_definition("TEST")
         # Most common words should have definitions
         # But we don't want to fail if some don't
@@ -47,58 +47,54 @@ class TestPuzzleGeneration:
     """Integration tests for puzzle generation."""
 
     @pytest.mark.slow
-    def test_generate_valid_puzzle(self) -> None:
+    def test_generate_valid_puzzle(self, real_dictionary: Dictionary) -> None:
         """Can generate a valid puzzle with real dictionary."""
-        dictionary = Dictionary.load()
-        puzzle = generate_puzzle(dictionary, excluded_quartiles=set())
+        puzzle = generate_puzzle(real_dictionary, excluded_quartiles=set())
 
         assert puzzle is not None
         assert len(puzzle.tiles) == 20
         assert len(puzzle.quartile_words) == 5
         assert puzzle.total_points >= 130
 
-    @pytest.mark.slow
-    def test_quartiles_are_valid_words(self) -> None:
+    def test_quartiles_are_valid_words(self, generated_puzzle: Puzzle, real_dictionary: Dictionary) -> None:
         """All quartile words exist in dictionary."""
-        dictionary = Dictionary.load()
-        puzzle = generate_puzzle(dictionary, excluded_quartiles=set())
+        puzzle = generated_puzzle
 
         assert puzzle is not None
         for quartile in puzzle.quartile_words:
-            assert dictionary.contains(quartile)
+            assert real_dictionary.contains(quartile)
             # Quartiles should have definitions
-            assert dictionary.get_definition(quartile) is not None
+            assert real_dictionary.get_definition(quartile) is not None
 
-    @pytest.mark.slow
-    def test_quartiles_are_four_tile_words(self) -> None:
+    def test_quartiles_are_four_tile_words(self, generated_puzzle: Puzzle) -> None:
         """All quartile words use exactly 4 tiles."""
-        dictionary = Dictionary.load()
-        puzzle = generate_puzzle(dictionary, excluded_quartiles=set())
+        puzzle = generated_puzzle
 
         assert puzzle is not None
         for quartile in puzzle.quartile_words:
             assert is_quartile_word(quartile, puzzle.tiles)
 
-    @pytest.mark.slow
-    def test_valid_words_contain_quartiles(self) -> None:
+    def test_valid_words_contain_quartiles(self, generated_puzzle: Puzzle) -> None:
         """All quartiles are in the valid_words set."""
-        dictionary = Dictionary.load()
-        puzzle = generate_puzzle(dictionary, excluded_quartiles=set())
+        puzzle = generated_puzzle
 
         assert puzzle is not None
         for quartile in puzzle.quartile_words:
             assert quartile in puzzle.valid_words
 
     @pytest.mark.slow
-    def test_excluded_quartiles_respected(self) -> None:
-        """Excluded quartiles are not used in new puzzles."""
-        dictionary = Dictionary.load()
-        puzzle1 = generate_puzzle(dictionary, excluded_quartiles=set())
+    def test_excluded_quartiles_respected(self, generated_puzzle: Puzzle, real_dictionary: Dictionary) -> None:
+        """Excluded quartiles are not used in new puzzles.
+
+        Note: This test cannot use the shared generated_puzzle fixture because
+        it needs to generate TWO different puzzles with different exclusions.
+        """
+        puzzle1 = generated_puzzle
         assert puzzle1 is not None
 
         # Exclude the quartiles from the first puzzle
         excluded = set(puzzle1.quartile_words)
-        puzzle2 = generate_puzzle(dictionary, excluded_quartiles=excluded)
+        puzzle2 = generate_puzzle(real_dictionary, excluded_quartiles=excluded)
         assert puzzle2 is not None
 
         # Second puzzle should not use any of the first puzzle's quartiles
@@ -109,10 +105,9 @@ class TestPuzzleGeneration:
 class TestGameState:
     """Tests for game state management."""
 
-    def test_initial_game_state(self) -> None:
+    def test_initial_game_state(self, generated_puzzle: Puzzle) -> None:
         """GameState initializes correctly."""
-        dictionary = Dictionary.load()
-        puzzle = generate_puzzle(dictionary, excluded_quartiles=set())
+        puzzle = generated_puzzle
 
         assert puzzle is not None
         state = GameState(
@@ -127,10 +122,9 @@ class TestGameState:
         assert state.is_solved is False
         assert len(state.unfound_quartiles) == 5
 
-    def test_finding_words_updates_state(self) -> None:
+    def test_finding_words_updates_state(self, generated_puzzle: Puzzle) -> None:
         """Finding words updates the game state."""
-        dictionary = Dictionary.load()
-        puzzle = generate_puzzle(dictionary, excluded_quartiles=set())
+        puzzle = generated_puzzle
 
         assert puzzle is not None
         state = GameState(
@@ -150,10 +144,9 @@ class TestGameState:
         assert quartile not in state.unfound_quartiles
         assert len(state.unfound_quartiles) == 4
 
-    def test_solved_state_at_100_points(self) -> None:
+    def test_solved_state_at_100_points(self, generated_puzzle: Puzzle) -> None:
         """Game is solved when reaching 100 points."""
-        dictionary = Dictionary.load()
-        puzzle = generate_puzzle(dictionary, excluded_quartiles=set())
+        puzzle = generated_puzzle
 
         assert puzzle is not None
         state = GameState(
@@ -169,27 +162,25 @@ class TestGameState:
 class TestWordFinding:
     """Integration tests for word finding."""
 
-    def test_find_words_from_generated_puzzle(self) -> None:
+    def test_find_words_from_generated_puzzle(self, generated_puzzle: Puzzle, real_dictionary: Dictionary) -> None:
         """Can find valid words from a generated puzzle."""
-        dictionary = Dictionary.load()
-        puzzle = generate_puzzle(dictionary, excluded_quartiles=set())
+        puzzle = generated_puzzle
 
         assert puzzle is not None
         # The puzzle already has valid_words pre-computed
         # Let's verify by running the solver ourselves
-        found_words = find_all_valid_words(puzzle.tiles, dictionary)
+        found_words = find_all_valid_words(puzzle.tiles, real_dictionary)
 
         # Should find all the quartile words
         for quartile in puzzle.quartile_words:
             assert quartile in found_words
 
-    def test_solver_matches_puzzle_valid_words(self) -> None:
+    def test_solver_matches_puzzle_valid_words(self, generated_puzzle: Puzzle, real_dictionary: Dictionary) -> None:
         """Solver results match puzzle's valid_words set."""
-        dictionary = Dictionary.load()
-        puzzle = generate_puzzle(dictionary, excluded_quartiles=set())
+        puzzle = generated_puzzle
 
         assert puzzle is not None
-        found_words = find_all_valid_words(puzzle.tiles, dictionary)
+        found_words = find_all_valid_words(puzzle.tiles, real_dictionary)
 
         # The puzzle's valid_words should match what we find
         assert found_words == puzzle.valid_words

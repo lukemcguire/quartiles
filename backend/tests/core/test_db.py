@@ -9,11 +9,11 @@ from app.models import User
 
 def test_init_db_creates_superuser(db: Session) -> None:
     """Test superuser creation when none exists."""
-    # Clear existing superuser
-    existing = db.exec(select(User).where(User.email == settings.FIRST_SUPERUSER)).first()
-    if existing:
-        db.delete(existing)
-        db.commit()
+    # Clear ALL existing superusers (handles parallel test execution)
+    existing_superusers = db.exec(select(User).where(User.is_superuser)).all()
+    for user in existing_superusers:
+        db.delete(user)
+    db.commit()
 
     # Initialize DB should create superuser
     init_db(db)

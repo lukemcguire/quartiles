@@ -13,7 +13,13 @@ from tests.utils.user import user_authentication_headers
 from tests.utils.utils import random_email, random_lower_string
 
 
-def test_get_access_token(client: TestClient) -> None:
+def test_get_access_token(client: TestClient, db: Session) -> None:
+    """Test getting an access token with valid credentials.
+
+    The db parameter ensures the database is initialized with the superuser
+    before attempting to authenticate.
+    """
+    _ = db  # Used for fixture side-effect (database initialization)
     login_data = {
         "username": settings.FIRST_SUPERUSER,
         "password": settings.FIRST_SUPERUSER_PASSWORD,
@@ -25,7 +31,13 @@ def test_get_access_token(client: TestClient) -> None:
     assert tokens["access_token"]
 
 
-def test_get_access_token_incorrect_password(client: TestClient) -> None:
+def test_get_access_token_incorrect_password(client: TestClient, db: Session) -> None:
+    """Test login fails with incorrect password.
+
+    The db parameter ensures the database is initialized with the superuser
+    before attempting to authenticate.
+    """
+    _ = db  # Used for fixture side-effect (database initialization)
     login_data = {
         "username": settings.FIRST_SUPERUSER,
         "password": "incorrect",

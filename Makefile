@@ -66,8 +66,13 @@ backend-install: ## Install backend dependencies
 	@uv sync --directory backend
 
 .PHONY: backend-test
-backend-test: ## Run backend tests with pytest
-	@echo "Running backend tests..."
+backend-test: ## Run fast backend tests (excludes slow tests)
+	@echo "Running fast backend tests..."
+	@uv run --directory backend python -m pytest tests -m "not slow" -v --cov=app --cov-report=xml
+
+.PHONY: backend-test-full
+backend-test-full: ## Run all backend tests including slow ones
+	@echo "Running all backend tests..."
 	@uv run --directory backend python -m pytest tests -v --cov=app --cov-report=xml
 
 .PHONY: backend-check

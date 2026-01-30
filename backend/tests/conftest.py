@@ -12,7 +12,7 @@ from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def db() -> Generator[Session]:
     with Session(engine) as session:
         init_db(session)
@@ -29,7 +29,16 @@ def client() -> Generator[TestClient]:
 
 
 @pytest.fixture(scope="module")
-def superuser_token_headers(client: TestClient) -> dict[str, str]:
+def superuser_token_headers(client: TestClient, db: Session) -> dict[str, str]:
+    """Get superuser authentication headers.
+
+    The db parameter ensures the database is initialized with the superuser
+    before attempting to authenticate.
+
+    Returns:
+        Dictionary with authorization headers for authenticated requests.
+    """
+    _ = db  # Used for fixture side-effect (database initialization)
     return get_superuser_token_headers(client)
 
 

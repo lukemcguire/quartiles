@@ -3,10 +3,11 @@
 import pytest
 
 from app.game.dictionary import Dictionary, TrieNode
+from app.game.generator import generate_puzzle
 from app.game.types import Puzzle, Tile
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def sample_dictionary() -> Dictionary:
     """Create a small dictionary for testing.
 
@@ -62,7 +63,7 @@ def sample_dictionary() -> Dictionary:
     return Dictionary(root)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def sample_tiles() -> tuple[Tile, ...]:
     """Create sample tiles for testing.
 
@@ -77,7 +78,7 @@ def sample_tiles() -> tuple[Tile, ...]:
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def sample_puzzle(_sample_tiles: tuple[Tile, ...]) -> Puzzle:
     """Create a sample puzzle for testing.
 
@@ -97,7 +98,7 @@ def sample_puzzle(_sample_tiles: tuple[Tile, ...]) -> Puzzle:
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def real_dictionary() -> Dictionary:
     """Load the real dictionary for integration tests.
 
@@ -105,3 +106,20 @@ def real_dictionary() -> Dictionary:
         The actual Dictionary instance from dictionary.bin.
     """
     return Dictionary.load()
+
+
+@pytest.fixture(scope="session")
+def generated_puzzle(real_dictionary: Dictionary) -> Puzzle:
+    """Generate a puzzle once per test session for integration tests.
+
+    This fixture generates a puzzle using the real dictionary and caches it
+    for the entire test session, significantly speeding up tests that need
+    a generated puzzle.
+
+    Args:
+        real_dictionary: The real dictionary fixture.
+
+    Returns:
+        A Puzzle instance generated from the real dictionary.
+    """
+    return generate_puzzle(real_dictionary, excluded_quartiles=set())
