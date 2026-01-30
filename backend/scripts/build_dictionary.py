@@ -10,8 +10,13 @@ Output:
 
 import pickle
 import re
-from dataclasses import dataclass, field
+import sys
 from pathlib import Path
+
+# Add parent directory to path to import from app.game
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from app.game.dictionary import TrieNode
 
 # Ensure WordNet is downloaded
 try:
@@ -33,15 +38,6 @@ OUTPUT_PATH = DATA_DIR / "dictionary.bin"
 # Configuration
 MIN_WORD_LENGTH = 3
 MAX_COCA_RANK = 30_000  # Only include words in top 30K by frequency
-
-
-@dataclass
-class TrieNode:
-    """Node in the dictionary trie."""
-
-    children: dict[str, "TrieNode"] = field(default_factory=dict)
-    is_word: bool = False
-    definition: str | None = None
 
 
 class DictionaryBuilder:
