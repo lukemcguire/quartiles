@@ -20,6 +20,7 @@ dependencies = [
     "pyjwt<3.0.0,>=2.8.0",
     "pwdlib[argon2,bcrypt]>=0.3.0",
     "nltk>=3.9.1",
+    "apscheduler<4.0.0,>=3.10.0",
 ]
 
 [dependency-groups]
@@ -125,6 +126,7 @@ convention = "google"
 "app/tests/*" = ["D", "S101", "ANN", "BLE", "TRY", "INP001"]
 "app/api/tests/*" = ["D", "S101", "ANN", "BLE", "TRY", "INP001"]
 "app/game/tests/*" = ["D", "S101", "ANN", "BLE", "TRY", "INP001"]
+"app/services/tests/*" = ["D", "S101", "ANN", "BLE", "TRY", "INP001"]
 "backend/scripts/*" = ["S403"]  # pickle is safe for trusted data
 "scripts/*" = ["S403"]  # pickle is safe for trusted data
 "app/services/name_generator.py" = ["S311"]  # random is OK for non-cryptographic name generation
