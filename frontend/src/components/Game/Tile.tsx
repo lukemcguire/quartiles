@@ -24,11 +24,14 @@ export function Tile({
       onClick={onClick}
       disabled={disabled}
       data-testid="tile"
+      data-tile-id={id}
       className={cn(
         // Base styles
         "relative flex h-full w-full items-center justify-center rounded-lg font-semibold transition-all duration-200",
         // Organic theme styles
         "tile-button interactive",
+        // Focus-visible styles for accessibility
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         // Size and spacing
         "min-h-[80px] min-w-[80px] sm:min-h-[90px] sm:min-w-[90px] md:min-h-[100px] md:min-w-[100px]",
         // Text styling
@@ -45,11 +48,14 @@ export function Tile({
         // Float animation for idle tiles
         !isSelected && !disabled && "animate-float pause-on-hover",
       )}
-      aria-label={`Tile: ${letters}`}
+      aria-label={`Tile with letters: ${letters}. ${isSelected ? "Selected." : "Not selected."}`}
       aria-pressed={isSelected}
     >
       {hasMultipleLetters ? (
-        <span className="flex flex-col items-center leading-tight">
+        <span
+          className="flex flex-col items-center leading-tight"
+          aria-hidden="true"
+        >
           {letters.split("").map((letter, index) => (
             <span key={index} className="text-[0.6em]">
               {letter}
@@ -57,7 +63,7 @@ export function Tile({
           ))}
         </span>
       ) : (
-        <span>{letters}</span>
+        <span aria-hidden="true">{letters}</span>
       )}
     </button>
   )

@@ -25,9 +25,11 @@ export function GameInput({
 }: GameInputProps) {
   return (
     <div className="space-y-4 w-full max-w-md">
-      {/* Score Display */}
-      <div className="text-center">
-        <div className="text-sm text-muted-foreground mb-1">Score</div>
+      {/* Score Display - using output for accessibility */}
+      <output className="block text-center">
+        <div className="text-sm text-muted-foreground mb-1" id="score-label">
+          Score
+        </div>
         <div
           data-testid="score-value"
           className={cn(
@@ -35,16 +37,22 @@ export function GameInput({
             showScoreAnimation && "animate-count-up",
           )}
         >
-          {score}
+          {score} / 100
         </div>
-      </div>
+      </output>
 
       {/* Current Word Display */}
       <div className="bg-base-100 rounded-xl p-6 card-organic">
         <div className="text-center">
-          <div className="text-sm text-muted-foreground mb-2">Current Word</div>
           <div
+            className="text-sm text-muted-foreground mb-2"
+            id="current-word-label"
+          >
+            Current Word
+          </div>
+          <output
             data-testid="current-word"
+            htmlFor="tile-grid"
             className={cn(
               "min-h-[60px] flex items-center justify-center text-3xl font-bold tracking-wider",
               currentWord ? "text-base-content" : "text-muted-foreground",
@@ -54,12 +62,16 @@ export function GameInput({
             {currentWord || (
               <span className="text-lg">Select tiles to form a word</span>
             )}
-          </div>
+          </output>
         </div>
 
-        {/* Error Message */}
+        {/* Error Message - with aria-live for screen readers */}
         {errorMessage && (
-          <div className="mt-3 text-center text-sm text-destructive animate-fade-in">
+          <div
+            className="mt-3 text-center text-sm text-destructive animate-fade-in"
+            role="alert"
+            aria-live="assertive"
+          >
             {errorMessage}
           </div>
         )}
@@ -74,8 +86,9 @@ export function GameInput({
           onClick={onClear}
           disabled={!currentWord || isSubmitting}
           className="flex-1 btn-organic"
+          aria-label="Clear selected tiles"
         >
-          <Eraser className="mr-2 h-4 w-4" />
+          <Eraser className="mr-2 h-4 w-4" aria-hidden="true" />
           Clear
         </Button>
         <Button
@@ -87,8 +100,9 @@ export function GameInput({
             "flex-1 btn-organic",
             canSubmit && "animate-pulse-glow",
           )}
+          aria-label={canSubmit ? `Submit word: ${currentWord}` : "Submit word"}
         >
-          <Check className="mr-2 h-4 w-4" />
+          <Check className="mr-2 h-4 w-4" aria-hidden="true" />
           Submit
         </Button>
       </div>

@@ -31,21 +31,29 @@ export function GameStatus({
   return (
     <div className={cn("flex items-center justify-between gap-4", className)}>
       {/* Time */}
-      <div className="flex items-center gap-2 bg-base-100 px-4 py-2 rounded-lg card-organic">
-        <Clock className="h-4 w-4 text-muted-foreground" />
-        <span className="font-mono font-semibold" data-testid="timer">
+      <output className="flex items-center gap-2 bg-base-100 px-4 py-2 rounded-lg card-organic">
+        <Clock className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+        <span
+          className="font-mono font-semibold"
+          data-testid="timer"
+          id="timer-display"
+        >
           {formatTime(timeElapsed)}
         </span>
-      </div>
+      </output>
 
       {/* Hints */}
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 bg-base-100 px-4 py-2 rounded-lg card-organic">
-          <Lightbulb className="h-4 w-4 text-muted-foreground" />
-          <span className="font-semibold">
+        <output className="flex items-center gap-2 bg-base-100 px-4 py-2 rounded-lg card-organic">
+          <Lightbulb
+            className="h-4 w-4 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <span className="font-semibold" id="hints-display">
             {hintsUsed}/{maxHints}
           </span>
-        </div>
+          <span className="sr-only">hints used</span>
+        </output>
 
         {onRequestHint && (
           <Button
@@ -55,8 +63,9 @@ export function GameStatus({
             onClick={onRequestHint}
             disabled={isHintDisabled || isRequestingHint}
             className="btn-organic"
+            aria-label={`Get hint (${hintsUsed} of ${maxHints} used)`}
           >
-            <Trophy className="h-4 w-4 mr-1" />
+            <Trophy className="h-4 w-4 mr-1" aria-hidden="true" />
             Hint
           </Button>
         )}
