@@ -1,0 +1,5 @@
+# Ignore raw downloaded data sources
+raw/
+
+# Ignore temporary blocklist
+blocklist.txt

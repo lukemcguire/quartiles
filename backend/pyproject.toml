@@ -19,6 +19,7 @@ dependencies = [
     "sentry-sdk[fastapi]<2.0.0,>=1.40.6",
     "pyjwt<3.0.0,>=2.8.0",
     "pwdlib[argon2,bcrypt]>=0.3.0",
+    "nltk>=3.9.1",
 ]
 
 [dependency-groups]
@@ -119,6 +120,9 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D", "S101", "ANN", "BLE", "TRY", "INP001"]
+"app/game/tests/*" = ["D", "S101", "ANN", "BLE", "TRY", "INP001"]
+"backend/scripts/*" = ["S403"]  # pickle is safe for trusted data
+"scripts/*" = ["S403"]  # pickle is safe for trusted data
 
 [tool.ruff.lint.pyupgrade]
 # Preserve types, even if a file imports `from __future__ import annotations`.

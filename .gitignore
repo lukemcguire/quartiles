@@ -224,3 +224,7 @@ node_modules/
 .claude/settings.*
 tmp_quartiles
 .ralphy
+
+# Dictionary pipeline - ignore raw sources and blocklist
+backend/data/raw/
+backend/data/blocklist.txt

@@ -102,6 +102,19 @@ migrate-down: ## Rollback last migration
 	@uv run --directory backend alembic downgrade -1
 
 # ==============================================================================
+# Dictionary Pipeline
+# ==============================================================================
+.PHONY: download-sources
+download-sources: ## Download SCOWL word list for dictionary building
+	@echo "Downloading dictionary sources..."
+	@python backend/scripts/download_sources.py
+
+.PHONY: build-dictionary
+build-dictionary: download-sources ## Build game dictionary from sources
+	@echo "Building dictionary..."
+	@python backend/scripts/build_dictionary.py
+
+# ==============================================================================
 # Frontend (using Bun)
 # ==============================================================================
 .PHONY: frontend-install
