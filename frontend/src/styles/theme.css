@@ -1,0 +1,121 @@
+/**
+ * Quartiles Theme - Grain & Gradient / Lo-Fi Organic
+ *
+ * Custom CSS for grain textures, tile styling, organic shadows,
+ * and other visual effects that complement the daisyUI theme.
+ */
+
+/* Grain texture overlay */
+.grain-overlay {
+  position: relative;
+}
+
+.grain-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+/* Tile-specific styling */
+.tile-button {
+  /* Organic shadow - soft and diffused */
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.05),
+    0 4px 8px rgba(0, 0, 0, 0.05);
+
+  /* Subtle grain on tiles */
+  background-image:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.02'/%3E%3C/svg%3E");
+}
+
+.tile-button:hover {
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.08),
+    0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* Selected tile glow */
+.tile-selected {
+  box-shadow:
+    0 0 0 3px var(--btn-focus-scale, rgb(91, 123, 111)),
+    0 4px 12px rgba(91, 123, 111, 0.3);
+}
+
+/* Success state for quartile tiles */
+.tile-quartile-found {
+  background-color: color-mix(
+    in srgb,
+    hsl(var(--success)) 15%,
+    hsl(var(--base-100))
+  );
+}
+
+/* Organic card shadows */
+.card-organic {
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+/* Soft button shadows */
+.btn-organic {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.06),
+    0 4px 8px rgba(0, 0, 0, 0.04);
+}
+
+.btn-organic:hover {
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.08),
+    0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* Subtle gradient backgrounds */
+.gradient-organic {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--base-100)) 0%,
+    hsl(var(--base-200)) 100%
+  );
+}
+
+/* Focus ring styling */
+.focus-organic:focus {
+  outline: none;
+  box-shadow:
+    0 0 0 2px hsl(var(--base-100)),
+    0 0 0 4px hsl(var(--primary));
+}
+
+/* Smooth transitions for interactive elements */
+.interactive {
+  transition-property:
+    color, background-color, border-color, text-decoration-color, fill, stroke,
+    box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Dark mode adjustments for grain overlay */
+.dark .grain-overlay::after {
+  mix-blend-mode: overlay;
+  opacity: 0.05;
+}
+
+/* Dark mode tile adjustments */
+.dark .tile-button {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.15),
+    0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dark .tile-button:hover {
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.2),
+    0 8px 16px rgba(0, 0, 0, 0.15);
+}

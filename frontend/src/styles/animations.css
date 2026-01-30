@@ -1,0 +1,232 @@
+/**
+ * Quartiles Animations
+ *
+ * Custom animation styles for the Quartiles game.
+ * These animations enhance the user experience with subtle,
+ * organic motion that complements the Lo-Fi aesthetic.
+ */
+
+/* Float animation - gentle up/down motion for idle tiles */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+/* Wobble animation - playful rotation on hover */
+@keyframes wobble {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-2deg);
+  }
+  75% {
+    transform: rotate(2deg);
+  }
+}
+
+/* Shake animation - error feedback for invalid words */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+/* Success animation - green flash for valid words */
+@keyframes success {
+  0% {
+    background-color: hsl(var(--success));
+    opacity: 1;
+  }
+  100% {
+    background-color: transparent;
+    opacity: 0;
+  }
+}
+
+/* Pulse animation - for submit button when word is valid */
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(123, 174, 127, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(123, 174, 127, 0);
+  }
+}
+
+/* Scale up animation - for completion celebration */
+@keyframes scale-up {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Fade in animation */
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Slide up animation */
+@keyframes slide-up {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Confetti celebration animation */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Selection ring animation */
+@keyframes selection-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Score count up animation */
+@keyframes count-up {
+  0% {
+    transform: scale(1.2);
+  }
+  50% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.1);
+  }
+}
+
+/* Utility classes for applying animations */
+
+/* Float animation - use on idle tiles */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Wobble animation - use on tile hover */
+.animate-wobble {
+  animation: wobble 0.3s ease-in-out;
+}
+
+/* Shake animation - use for invalid word feedback */
+.animate-shake {
+  animation: shake 0.3s ease-in-out;
+}
+
+/* Success animation - use for valid word feedback */
+.animate-success {
+  animation: success 0.4s ease-out;
+}
+
+/* Pulse glow - use for submit button when word is valid */
+.animate-pulse-glow {
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+/* Scale up - use for completion modal */
+.animate-scale-up {
+  animation: scale-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Fade in - use for content appearing */
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Slide up - use for content appearing from below */
+.animate-slide-up {
+  animation: slide-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Selection ring - use for tile selection */
+.animate-selection-ring {
+  animation: selection-ring 0.2s ease-out;
+}
+
+/* Score update - use for score increment */
+.animate-count-up {
+  animation: count-up 0.2s ease-out;
+}
+
+/* Staggered animation delays for lists */
+.stagger-1 {
+  animation-delay: 0.05s;
+}
+
+.stagger-2 {
+  animation-delay: 0.1s;
+}
+
+.stagger-3 {
+  animation-delay: 0.15s;
+}
+
+.stagger-4 {
+  animation-delay: 0.2s;
+}
+
+.stagger-5 {
+  animation-delay: 0.25s;
+}
+
+/* Pause animations on hover for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+  }
+}
+
+/* Allow pausing animations */
+.pause-on-hover:hover {
+  animation-play-state: paused;
+}

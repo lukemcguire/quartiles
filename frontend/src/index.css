@@ -1,5 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Import custom theme styles */
+@import "./styles/theme.css";
+@import "./styles/animations.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -116,9 +119,17 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
   }
   button,
   [role="button"] {
     cursor: pointer;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  /* Optional: Add grain to main content area */
+  #root {
+    @apply grain-overlay;
   }
 }
