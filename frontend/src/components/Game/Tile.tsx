@@ -5,6 +5,7 @@ export interface TileProps {
   letters: string
   isSelected: boolean
   isUsed?: boolean
+  isFocused?: boolean
   onClick: () => void
   disabled?: boolean
 }
@@ -14,6 +15,7 @@ export function Tile({
   letters,
   isSelected,
   isUsed,
+  isFocused,
   onClick,
   disabled,
 }: TileProps) {
@@ -33,6 +35,8 @@ export function Tile({
         "tile-button interactive",
         // Focus-visible styles for accessibility
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        // Keyboard focus styling
+        isFocused && "ring-2 ring-accent ring-offset-2",
         // Size and spacing
         "min-h-[80px] min-w-[80px] sm:min-h-[90px] sm:min-w-[90px] md:min-h-[100px] md:min-w-[100px]",
         // Text styling

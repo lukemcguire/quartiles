@@ -1,5 +1,4 @@
 import { Check, Eraser } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 export interface GameInputProps {
@@ -79,32 +78,29 @@ export function GameInput({
 
       {/* Action Buttons */}
       <div className="flex gap-3">
-        <Button
+        <button
           type="button"
-          variant="outline"
-          size="lg"
+          className="btn btn-outline btn-lg flex-1 btn-organic"
           onClick={onClear}
           disabled={!currentWord || isSubmitting}
-          className="flex-1 btn-organic"
           aria-label="Clear selected tiles"
         >
           <Eraser className="mr-2 h-4 w-4" aria-hidden="true" />
           Clear
-        </Button>
-        <Button
+        </button>
+        <button
           type="button"
-          size="lg"
+          className={cn(
+            "btn btn-lg flex-1 btn-organic",
+            canSubmit && "btn-primary animate-pulse-glow",
+          )}
           onClick={onSubmit}
           disabled={!canSubmit || isSubmitting}
-          className={cn(
-            "flex-1 btn-organic",
-            canSubmit && "animate-pulse-glow",
-          )}
           aria-label={canSubmit ? `Submit word: ${currentWord}` : "Submit word"}
         >
           <Check className="mr-2 h-4 w-4" aria-hidden="true" />
           Submit
-        </Button>
+        </button>
       </div>
     </div>
   )

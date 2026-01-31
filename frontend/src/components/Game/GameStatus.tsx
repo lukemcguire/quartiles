@@ -1,5 +1,4 @@
 import { Clock, Lightbulb, Trophy } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 export interface GameStatusProps {
@@ -56,18 +55,16 @@ export function GameStatus({
         </output>
 
         {onRequestHint && (
-          <Button
+          <button
             type="button"
-            variant="outline"
-            size="sm"
+            className="btn btn-outline btn-sm btn-organic"
             onClick={onRequestHint}
             disabled={isHintDisabled || isRequestingHint}
-            className="btn-organic"
             aria-label={`Get hint (${hintsUsed} of ${maxHints} used)`}
           >
             <Trophy className="h-4 w-4 mr-1" aria-hidden="true" />
             Hint
-          </Button>
+          </button>
         )}
       </div>
     </div>

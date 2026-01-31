@@ -44,6 +44,14 @@ export default defineConfig({
       dependencies: ['setup'],
     },
 
+    {
+      name: 'chromium-no-auth',
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+      testMatch: /.*localstorage\.spec\.ts/,
+    },
+
     // {
     //   name: 'firefox',
     //   use: {

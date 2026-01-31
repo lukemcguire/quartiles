@@ -1,16 +1,5 @@
 import { AlertCircle, RotateCcw, Trophy } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   type GameSession,
   useGameStart,
@@ -18,10 +7,25 @@ import {
   useSubmitGame,
   useValidateWord,
 } from "@/hooks/useGame"
+import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation"
 import { type FoundWord, FoundWordsList } from "./FoundWordsList"
 import { GameBoard } from "./GameBoard"
 import { GameInput } from "./GameInput"
 import { GameStatus } from "./GameStatus"
+
+// localStorage persistence
+const STORAGE_KEY = "quartiles_game_session"
+const SESSION_VALIDITY_MS = 24 * 60 * 60 * 1000 // 24 hours
+
+interface StoredGameState {
+  sessionId: string
+  timestamp: number
+  tiles: Array<{ id: number; letters: string }>
+  foundWords: FoundWord[]
+  selectedTileIds: number[]
+  timeElapsed: number
+  hintsUsed: number
+}
 
 const MAX_HINTS = 5
 
@@ -65,6 +69,70 @@ export function Game() {
 
     return () => clearInterval(interval)
   }, [gameSession, showCompleteDialog])
+
+  // localStorage: Save state on changes
+  useEffect(() => {
+    if (gameSession && !showCompleteDialog) {
+      const state: StoredGameState = {
+        sessionId: gameSession.sessionId,
+        timestamp: Date.now(),
+        tiles: gameSession.tiles,
+        foundWords,
+        selectedTileIds,
+        timeElapsed,
+        hintsUsed,
+      }
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+      } catch (e) {
+        console.warn("Failed to save game state:", e)
+      }
+    }
+  }, [
+    gameSession,
+    foundWords,
+    selectedTileIds,
+    timeElapsed,
+    hintsUsed,
+    showCompleteDialog,
+  ])
+
+  // localStorage: Restore on mount
+  useEffect(() => {
+    if (!gameSession) return
+
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (!stored) return
+
+    try {
+      const parsed = JSON.parse(stored) as StoredGameState
+      const age = Date.now() - parsed.timestamp
+
+      // Only restore if < 24 hours and same session
+      if (
+        age < SESSION_VALIDITY_MS &&
+        parsed.sessionId === gameSession.sessionId
+      ) {
+        setFoundWords(parsed.foundWords)
+        setSelectedTileIds(parsed.selectedTileIds)
+        setTimeElapsed(parsed.timeElapsed)
+        setHintsUsed(parsed.hintsUsed)
+      } else {
+        // Clear stale or mismatched session
+        localStorage.removeItem(STORAGE_KEY)
+      }
+    } catch (e) {
+      console.warn("Failed to restore game state:", e)
+      localStorage.removeItem(STORAGE_KEY)
+    }
+  }, [gameSession])
+
+  // localStorage: Clear on completion
+  useEffect(() => {
+    if (showCompleteDialog) {
+      localStorage.removeItem(STORAGE_KEY)
+    }
+  }, [showCompleteDialog])
 
   // Build current word from selected tiles
   const currentWord = useMemo(() => {
@@ -153,6 +221,20 @@ export function Game() {
     }
   }, [gameSession, currentWord, validateWordMutation, submitGameMutation])
 
+  // Keyboard navigation (must be after handleClear and handleSubmit are defined)
+  const { focusedIndex, keyHandlers } = useKeyboardNavigation({
+    tileCount: gameSession?.tiles.length ?? 20,
+    columns: 4,
+    onTileSelect: (index) => {
+      if (gameSession) {
+        handleTileClick(gameSession.tiles[index].id)
+      }
+    },
+    onClear: handleClear,
+    onSubmit: handleSubmit,
+    disabled: showCompleteDialog || !gameSession,
+  })
+
   // Request hint
   const handleRequestHint = useCallback(async () => {
     if (!gameSession || hintsUsed >= MAX_HINTS) return
@@ -176,8 +258,8 @@ export function Game() {
   if (gameStartMutation.isPending) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] gap-6">
-        <Skeleton className="h-[400px] w-[400px] rounded-2xl" />
-        <Skeleton className="h-12 w-64" />
+        <div className="skeleton h-[400px] w-[400px] rounded-2xl" />
+        <div className="skeleton h-12 w-64" />
       </div>
     )
   }
@@ -185,12 +267,10 @@ export function Game() {
   // Error state
   if (gameStartMutation.error) {
     return (
-      <Alert variant="destructive" className="max-w-md mx-auto">
+      <div className="alert alert-error max-w-md mx-auto shadow-lg">
         <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Failed to load game. Please refresh the page to try again.
-        </AlertDescription>
-      </Alert>
+        <span>Failed to load game. Please refresh the page to try again.</span>
+      </div>
     )
   }
 
@@ -224,6 +304,8 @@ export function Game() {
             usedTileIds={usedTileIds}
             onTileClick={handleTileClick}
             disabled={showCompleteDialog}
+            focusedIndex={focusedIndex}
+            onKeyDown={keyHandlers.onKeyDown}
           />
 
           <GameInput
@@ -245,17 +327,13 @@ export function Game() {
       </div>
 
       {/* Complete Dialog */}
-      <Dialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Trophy className="h-6 w-6 text-warning" />
-              Puzzle Complete!
-            </DialogTitle>
-            <DialogDescription>
-              Congratulations! You found all the quartiles.
-            </DialogDescription>
-          </DialogHeader>
+      <dialog className={`modal ${showCompleteDialog ? "modal-open" : ""}`}>
+        <div className="modal-box">
+          <h3 className="font-bold text-lg flex items-center gap-2">
+            <Trophy className="h-6 w-6 text-warning" />
+            Puzzle Complete!
+          </h3>
+          <p className="py-4">Congratulations! You found all the quartiles.</p>
 
           {submitGameMutation.data && (
             <div className="space-y-4 py-4">
@@ -288,14 +366,23 @@ export function Game() {
             </div>
           )}
 
-          <DialogFooter>
-            <Button onClick={() => window.location.reload()} variant="outline">
+          <div className="modal-action">
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => window.location.reload()}
+            >
               <RotateCcw className="mr-2 h-4 w-4" />
               Play Again
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </button>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button type="button" onClick={() => setShowCompleteDialog(false)}>
+            close
+          </button>
+        </form>
+      </dialog>
     </div>
   )
 }

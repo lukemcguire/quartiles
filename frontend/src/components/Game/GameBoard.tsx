@@ -6,6 +6,8 @@ export interface GameBoardProps {
   usedTileIds: Set<number>
   onTileClick: (tileId: number) => void
   disabled?: boolean
+  focusedIndex?: number | null
+  onKeyDown?: (e: React.KeyboardEvent<HTMLElement>) => void
 }
 
 export function GameBoard({
@@ -14,11 +16,15 @@ export function GameBoard({
   usedTileIds,
   onTileClick,
   disabled,
+  focusedIndex,
+  onKeyDown,
 }: GameBoardProps) {
   return (
-    <div
+    <section
+      aria-label="Game board"
       className="grid grid-cols-4 gap-3 sm:gap-4 p-4 sm:p-6 bg-base-200/50 rounded-2xl card-organic"
       data-testid="game-board"
+      onKeyDown={onKeyDown}
     >
       {tiles.map((tile, index) => {
         const isSelected = selectedTileIds.includes(tile.id)
@@ -37,10 +43,11 @@ export function GameBoard({
               isUsed={isUsed}
               onClick={() => onTileClick(tile.id)}
               disabled={disabled}
+              isFocused={index === focusedIndex}
             />
           </div>
         )
       })}
-    </div>
+    </section>
   )
 }
