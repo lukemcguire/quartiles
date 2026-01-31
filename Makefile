@@ -75,6 +75,21 @@ backend-test-full: ## Run all backend tests including slow ones
 	@echo "Running all backend tests..."
 	@ENVIRONMENT=test uv run --directory backend python -m pytest tests -v --cov=app --cov-report=xml
 
+.PHONY: backend-test-unit
+backend-test-unit: ## Run only fast unit tests
+	@echo "Running unit tests..."
+	@ENVIRONMENT=test uv run --directory backend python -m pytest tests -m "unit and not slow" -v
+
+.PHONY: backend-test-integration
+backend-test-integration: ## Run integration tests
+	@echo "Running integration tests..."
+	@ENVIRONMENT=test uv run --directory backend python -m pytest tests -m "integration" -v
+
+.PHONY: backend-test-profile
+backend-test-profile: ## Profile slowest backend tests
+	@echo "Profiling backend tests..."
+	@ENVIRONMENT=test uv run --directory backend python -m pytest tests -v --durations=20
+
 .PHONY: backend-check
 backend-check: ## Run backend code quality checks (ty + ruff)
 	@echo "Running backend type checks (ty)..."
