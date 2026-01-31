@@ -59,7 +59,7 @@ export function User({ user }: { user: any }) {
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger>
             <SidebarMenuButton
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
@@ -69,12 +69,7 @@ export function User({ user }: { user: any }) {
               <ChevronsUpDown className="ml-auto size-4 text-muted-foreground" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
-            align="end"
-            sideOffset={4}
-          >
+          <DropdownMenuContent className="min-w-56 rounded-lg">
             <DropdownMenuLabel className="p-0 font-normal">
               <UserInfo fullName={user?.full_name} email={user?.email} />
             </DropdownMenuLabel>

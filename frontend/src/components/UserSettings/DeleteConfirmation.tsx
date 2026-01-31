@@ -42,7 +42,7 @@ const DeleteConfirmation = () => {
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
+      <DialogTrigger>
         <Button variant="destructive" className="mt-3">
           Delete Account
         </Button>
@@ -60,7 +60,7 @@ const DeleteConfirmation = () => {
           </DialogHeader>
 
           <DialogFooter className="mt-4">
-            <DialogClose asChild>
+            <DialogClose>
               <Button variant="outline" disabled={mutation.isPending}>
                 Cancel
               </Button>

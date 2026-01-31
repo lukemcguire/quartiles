@@ -1,63 +1,124 @@
+"use client"
+
 import * as React from "react"
-import * as TabsPrimitive from "@radix-ui/react-tabs"
 
 import { cn } from "@/lib/utils"
 
+type TabsContextValue = {
+  value: string
+  onValueChange: (value: string) => void
+}
+
+const TabsContext = React.createContext<TabsContextValue | null>(null)
+
+function useTabs() {
+  const context = React.useContext(TabsContext)
+  if (!context) {
+    throw new Error("useTabs must be used within a Tabs component")
+  }
+  return context
+}
+
 function Tabs({
+  defaultValue,
+  value: controlledValue,
+  onValueChange,
   className,
+  children,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Root>) {
+}: React.ComponentProps<"div"> & {
+  defaultValue?: string
+  value?: string
+  onValueChange?: (value: string) => void
+}) {
+  const [uncontrolledValue, setUncontrolledValue] = React.useState(
+    defaultValue || ""
+  )
+
+  const value = controlledValue ?? uncontrolledValue
+  const setValue = React.useCallback(
+    (newValue: string) => {
+      if (controlledValue === undefined) {
+        setUncontrolledValue(newValue)
+      }
+      onValueChange?.(newValue)
+    },
+    [controlledValue, onValueChange]
+  )
+
+  const contextValue = React.useMemo(
+    () => ({ value, onValueChange: setValue }),
+    [value, setValue]
+  )
+
   return (
-    <TabsPrimitive.Root
-      data-slot="tabs"
-      className={cn("flex flex-col gap-2", className)}
-      {...props}
-    />
+    <TabsContext.Provider value={contextValue}>
+      <div className={cn("flex flex-col gap-2", className)} {...props}>
+        {children}
+      </div>
+    </TabsContext.Provider>
   )
 }
 
 function TabsList({
   className,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.List>) {
+}: React.ComponentProps<"div">) {
   return (
-    <TabsPrimitive.List
-      data-slot="tabs-list"
-      className={cn(
-        "bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]",
-        className
-      )}
+    <div
+      role="tablist"
+      className={cn("tabs tabs-boxed bg-base-200", className)}
       {...props}
     />
   )
 }
 
 function TabsTrigger({
+  value: triggerValue,
   className,
+  children,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+}: React.ComponentProps<"button"> & {
+  value: string
+}) {
+  const { value, onValueChange } = useTabs()
+
   return (
-    <TabsPrimitive.Trigger
-      data-slot="tabs-trigger"
-      className={cn(
-        "data-[state=active]:bg-background dark:data-[state=active]:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 text-foreground dark:text-muted-foreground inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-sm [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        className
-      )}
+    <button
+      role="tab"
+      type="button"
+      aria-selected={value === triggerValue}
+      className={cn("tab", value === triggerValue && "tab-active", className)}
+      onClick={() => onValueChange(triggerValue)}
       {...props}
-    />
+    >
+      {children}
+    </button>
   )
 }
 
 function TabsContent({
+  value: contentValue,
   className,
+  children,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Content>) {
+}: React.ComponentProps<"div"> & {
+  value: string
+}) {
+  const { value } = useTabs()
+
+  if (value !== contentValue) {
+    return null
+  }
+
   return (
-    <TabsPrimitive.Content
-      data-slot="tabs-content"
-      className={cn("flex-1 outline-none", className)}
+    <div
+      role="tabpanel"
+      className={cn("", className)}
       {...props}
-    />
+    >
+      {children}
+    </div>
   )
 }
 

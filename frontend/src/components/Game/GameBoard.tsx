@@ -7,7 +7,7 @@ export interface GameBoardProps {
   onTileClick: (tileId: number) => void
   disabled?: boolean
   focusedIndex?: number | null
-  onKeyDown?: (e: React.KeyboardEvent<HTMLElement>) => void
+  onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void
 }
 
 export function GameBoard({
