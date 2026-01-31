@@ -13,13 +13,13 @@ from tests.utils.user import user_authentication_headers
 from tests.utils.utils import random_email, random_lower_string
 
 
-def test_get_access_token(client: TestClient, db: Session) -> None:
+def test_get_access_token(client: TestClient, session: Session) -> None:
     """Test getting an access token with valid credentials.
 
-    The db parameter ensures the database is initialized with the superuser
+    The session parameter ensures the database is initialized with the superuser
     before attempting to authenticate.
     """
-    _ = db  # Used for fixture side-effect (database initialization)
+    _ = session  # Used for fixture side-effect (database initialization)
     login_data = {
         "username": settings.FIRST_SUPERUSER,
         "password": settings.FIRST_SUPERUSER_PASSWORD,
@@ -31,13 +31,13 @@ def test_get_access_token(client: TestClient, db: Session) -> None:
     assert tokens["access_token"]
 
 
-def test_get_access_token_incorrect_password(client: TestClient, db: Session) -> None:
+def test_get_access_token_incorrect_password(client: TestClient, session: Session) -> None:
     """Test login fails with incorrect password.
 
-    The db parameter ensures the database is initialized with the superuser
+    The session parameter ensures the database is initialized with the superuser
     before attempting to authenticate.
     """
-    _ = db  # Used for fixture side-effect (database initialization)
+    _ = session  # Used for fixture side-effect (database initialization)
     login_data = {
         "username": settings.FIRST_SUPERUSER,
         "password": "incorrect",
@@ -81,7 +81,7 @@ def test_recovery_password_user_not_exits(client: TestClient, normal_user_token_
     assert r.json() == {"message": "If that email is registered, we sent a password recovery link"}
 
 
-def test_reset_password(client: TestClient, db: Session) -> None:
+def test_reset_password(client: TestClient, session: Session) -> None:
     email = random_email()
     password = random_lower_string()
     new_password = random_lower_string()
@@ -93,7 +93,7 @@ def test_reset_password(client: TestClient, db: Session) -> None:
         is_active=True,
         is_superuser=False,
     )
-    user = create_user(session=db, user_create=user_create)
+    user = create_user(session=session, user_create=user_create)
     token = generate_password_reset_token(email=email)
     headers = user_authentication_headers(client=client, email=email, password=password)
     data = {"new_password": new_password, "token": token}
@@ -107,7 +107,7 @@ def test_reset_password(client: TestClient, db: Session) -> None:
     assert r.status_code == 200
     assert r.json() == {"message": "Password updated successfully"}
 
-    db.refresh(user)
+    session.refresh(user)
     verified, _ = verify_password(new_password, user.hashed_password)
     assert verified
 
@@ -126,7 +126,7 @@ def test_reset_password_invalid_token(client: TestClient, superuser_token_header
     assert response["detail"] == "Invalid token"
 
 
-def test_login_with_bcrypt_password_upgrades_to_argon2(client: TestClient, db: Session) -> None:
+def test_login_with_bcrypt_password_upgrades_to_argon2(client: TestClient, session: Session) -> None:
     """Test that logging in with a bcrypt password hash upgrades it to argon2."""
     email = random_email()
     password = random_lower_string()
@@ -137,9 +137,9 @@ def test_login_with_bcrypt_password_upgrades_to_argon2(client: TestClient, db: S
     assert bcrypt_hash.startswith("$2")  # bcrypt hashes start with $2
 
     user = User(email=email, hashed_password=bcrypt_hash, is_active=True)
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+    session.add(user)
+    session.commit()
+    session.refresh(user)
 
     assert user.hashed_password.startswith("$2")
 
@@ -149,7 +149,7 @@ def test_login_with_bcrypt_password_upgrades_to_argon2(client: TestClient, db: S
     tokens = r.json()
     assert "access_token" in tokens
 
-    db.refresh(user)
+    session.refresh(user)
 
     # Verify the hash was upgraded to argon2
     assert user.hashed_password.startswith("$argon2")
@@ -160,7 +160,7 @@ def test_login_with_bcrypt_password_upgrades_to_argon2(client: TestClient, db: S
     assert updated_hash is None
 
 
-def test_login_with_argon2_password_keeps_hash(client: TestClient, db: Session) -> None:
+def test_login_with_argon2_password_keeps_hash(client: TestClient, session: Session) -> None:
     """Test that logging in with an argon2 password hash does not update it."""
     email = random_email()
     password = random_lower_string()
@@ -171,9 +171,9 @@ def test_login_with_argon2_password_keeps_hash(client: TestClient, db: Session) 
 
     # Create user with argon2 hash
     user = User(email=email, hashed_password=argon2_hash, is_active=True)
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+    session.add(user)
+    session.commit()
+    session.refresh(user)
 
     original_hash = user.hashed_password
 
@@ -183,13 +183,13 @@ def test_login_with_argon2_password_keeps_hash(client: TestClient, db: Session) 
     tokens = r.json()
     assert "access_token" in tokens
 
-    db.refresh(user)
+    session.refresh(user)
 
     assert user.hashed_password == original_hash
     assert user.hashed_password.startswith("$argon2")
 
 
-def test_test_token_inactive_user(client: TestClient, db: Session) -> None:
+def test_test_token_inactive_user(client: TestClient, session: Session) -> None:
     """Test inactive user returns 400."""
 
     email = random_email()
@@ -203,7 +203,7 @@ def test_test_token_inactive_user(client: TestClient, db: Session) -> None:
         is_active=False,
         is_superuser=False,
     )
-    create_user(session=db, user_create=user_create)
+    create_user(session=session, user_create=user_create)
 
     # Try to get authentication headers - inactive users can't login
     # This should fail at the login stage with 400
@@ -213,7 +213,7 @@ def test_test_token_inactive_user(client: TestClient, db: Session) -> None:
     assert "Inactive user" in login_response.json().get("detail", "")
 
 
-def test_reset_password_inactive_user(client: TestClient, db: Session) -> None:
+def test_reset_password_inactive_user(client: TestClient, session: Session) -> None:
     """Test reset for inactive user fails."""
     email = random_email()
     password = random_lower_string()
@@ -226,7 +226,7 @@ def test_reset_password_inactive_user(client: TestClient, db: Session) -> None:
         is_active=False,
         is_superuser=False,
     )
-    create_user(session=db, user_create=user_create)
+    create_user(session=session, user_create=user_create)
 
     # Generate reset token
     token = generate_password_reset_token(email=email)

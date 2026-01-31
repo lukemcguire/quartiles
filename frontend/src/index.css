@@ -128,8 +128,4 @@
   html {
     scroll-behavior: smooth;
   }
-  /* Optional: Add grain to main content area */
-  #root {
-    @apply grain-overlay;
-  }
 }

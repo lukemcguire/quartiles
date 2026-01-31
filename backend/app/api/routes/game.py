@@ -475,7 +475,11 @@ async def submit_game(
 
     # Calculate final time
     now = datetime.now(UTC)
-    elapsed_ms = int((now - session.start_time).total_seconds() * 1000)
+    # Handle naive datetimes from SQLite (assume UTC)
+    start_time = session.start_time
+    if start_time.tzinfo is None:
+        start_time = start_time.replace(tzinfo=UTC)
+    elapsed_ms = int((now - start_time).total_seconds() * 1000)
     total_time_ms = elapsed_ms + session.hint_penalty_ms
 
     # Mark session complete

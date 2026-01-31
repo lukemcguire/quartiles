@@ -10,6 +10,7 @@ export interface TileProps {
 }
 
 export function Tile({
+  id,
   letters,
   isSelected,
   isUsed,

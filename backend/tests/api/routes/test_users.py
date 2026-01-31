@@ -30,7 +30,7 @@ def test_get_users_normal_user_me(client: TestClient, normal_user_token_headers:
     assert current_user["email"] == settings.EMAIL_TEST_USER
 
 
-def test_create_user_new_email(client: TestClient, superuser_token_headers: dict[str, str], db: Session) -> None:
+def test_create_user_new_email(client: TestClient, superuser_token_headers: dict[str, str], session: Session) -> None:
     with (
         patch("app.utils.send_email", return_value=None),
         patch("app.core.config.settings.SMTP_HOST", "smtp.example.com"),
@@ -46,18 +46,18 @@ def test_create_user_new_email(client: TestClient, superuser_token_headers: dict
         )
         assert 200 <= r.status_code < 300
         created_user = r.json()
-        user = crud.get_user_by_email(session=db, email=username)
+        user = crud.get_user_by_email(session=session, email=username)
         assert user
         assert user.email == created_user["email"]
 
 
 def test_get_existing_user_as_superuser(
-    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+    client: TestClient, superuser_token_headers: dict[str, str], session: Session
 ) -> None:
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
+    user = crud.create_user(session=session, user_create=user_in)
     user_id = user.id
     r = client.get(
         f"{settings.API_V1_STR}/users/{user_id}",
@@ -65,7 +65,7 @@ def test_get_existing_user_as_superuser(
     )
     assert 200 <= r.status_code < 300
     api_user = r.json()
-    existing_user = crud.get_user_by_email(session=db, email=username)
+    existing_user = crud.get_user_by_email(session=session, email=username)
     assert existing_user
     assert existing_user.email == api_user["email"]
 
@@ -79,11 +79,11 @@ def test_get_non_existing_user_as_superuser(client: TestClient, superuser_token_
     assert r.json() == {"detail": "User not found"}
 
 
-def test_get_existing_user_current_user(client: TestClient, db: Session) -> None:
+def test_get_existing_user_current_user(client: TestClient, session: Session) -> None:
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
+    user = crud.create_user(session=session, user_create=user_in)
     user_id = user.id
 
     login_data = {
@@ -101,17 +101,17 @@ def test_get_existing_user_current_user(client: TestClient, db: Session) -> None
     )
     assert 200 <= r.status_code < 300
     api_user = r.json()
-    existing_user = crud.get_user_by_email(session=db, email=username)
+    existing_user = crud.get_user_by_email(session=session, email=username)
     assert existing_user
     assert existing_user.email == api_user["email"]
 
 
 def test_get_existing_user_permissions_error(
-    db: Session,
+    session: Session,
     client: TestClient,
     normal_user_token_headers: dict[str, str],
 ) -> None:
-    user = create_random_user(db)
+    user = create_random_user(session)
 
     r = client.get(
         f"{settings.API_V1_STR}/users/{user.id}",
@@ -136,13 +136,13 @@ def test_get_non_existing_user_permissions_error(
 
 
 def test_create_user_existing_username(
-    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+    client: TestClient, superuser_token_headers: dict[str, str], session: Session
 ) -> None:
     username = random_email()
     # username = email
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    crud.create_user(session=db, user_create=user_in)
+    crud.create_user(session=session, user_create=user_in)
     data = {"email": username, "password": password}
     r = client.post(
         f"{settings.API_V1_STR}/users/",
@@ -166,16 +166,16 @@ def test_create_user_by_normal_user(client: TestClient, normal_user_token_header
     assert r.status_code == 403
 
 
-def test_retrieve_users(client: TestClient, superuser_token_headers: dict[str, str], db: Session) -> None:
+def test_retrieve_users(client: TestClient, superuser_token_headers: dict[str, str], session: Session) -> None:
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    crud.create_user(session=db, user_create=user_in)
+    crud.create_user(session=session, user_create=user_in)
 
     username2 = random_email()
     password2 = random_lower_string()
     user_in2 = UserCreate(email=username2, password=password2)
-    crud.create_user(session=db, user_create=user_in2)
+    crud.create_user(session=session, user_create=user_in2)
 
     r = client.get(f"{settings.API_V1_STR}/users/", headers=superuser_token_headers)
     all_users = r.json()
@@ -186,7 +186,7 @@ def test_retrieve_users(client: TestClient, superuser_token_headers: dict[str, s
         assert "email" in item
 
 
-def test_update_user_me(client: TestClient, normal_user_token_headers: dict[str, str], db: Session) -> None:
+def test_update_user_me(client: TestClient, normal_user_token_headers: dict[str, str], session: Session) -> None:
     full_name = "Updated Name"
     email = random_email()
     data = {"full_name": full_name, "email": email}
@@ -201,13 +201,13 @@ def test_update_user_me(client: TestClient, normal_user_token_headers: dict[str,
     assert updated_user["full_name"] == full_name
 
     user_query = select(User).where(User.email == email)
-    user_db = db.exec(user_query).first()
+    user_db = session.exec(user_query).first()
     assert user_db
     assert user_db.email == email
     assert user_db.full_name == full_name
 
 
-def test_update_password_me(client: TestClient, superuser_token_headers: dict[str, str], db: Session) -> None:
+def test_update_password_me(client: TestClient, superuser_token_headers: dict[str, str], session: Session) -> None:
     new_password = random_lower_string()
     data = {
         "current_password": settings.FIRST_SUPERUSER_PASSWORD,
@@ -223,7 +223,7 @@ def test_update_password_me(client: TestClient, superuser_token_headers: dict[st
     assert updated_user["message"] == "Password updated successfully"
 
     user_query = select(User).where(User.email == settings.FIRST_SUPERUSER)
-    user_db = db.exec(user_query).first()
+    user_db = session.exec(user_query).first()
     assert user_db
     assert user_db.email == settings.FIRST_SUPERUSER
     verified, _ = verify_password(new_password, user_db.hashed_password)
@@ -239,7 +239,7 @@ def test_update_password_me(client: TestClient, superuser_token_headers: dict[st
         headers=superuser_token_headers,
         json=old_data,
     )
-    db.refresh(user_db)
+    session.refresh(user_db)
 
     assert r.status_code == 200
     verified, _ = verify_password(settings.FIRST_SUPERUSER_PASSWORD, user_db.hashed_password)
@@ -260,12 +260,12 @@ def test_update_password_me_incorrect_password(client: TestClient, superuser_tok
 
 
 def test_update_user_me_email_exists(
-    client: TestClient, normal_user_token_headers: dict[str, str], db: Session
+    client: TestClient, normal_user_token_headers: dict[str, str], session: Session
 ) -> None:
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
+    user = crud.create_user(session=session, user_create=user_in)
 
     data = {"email": user.email}
     r = client.patch(
@@ -292,7 +292,7 @@ def test_update_password_me_same_password_error(client: TestClient, superuser_to
     assert updated_user["detail"] == "New password cannot be the same as the current one"
 
 
-def test_register_user(client: TestClient, db: Session) -> None:
+def test_register_user(client: TestClient, session: Session) -> None:
     username = random_email()
     password = random_lower_string()
     full_name = random_lower_string()
@@ -307,7 +307,7 @@ def test_register_user(client: TestClient, db: Session) -> None:
     assert created_user["full_name"] == full_name
 
     user_query = select(User).where(User.email == username)
-    user_db = db.exec(user_query).first()
+    user_db = session.exec(user_query).first()
     assert user_db
     assert user_db.email == username
     assert user_db.full_name == full_name
@@ -331,11 +331,11 @@ def test_register_user_already_exists_error(client: TestClient) -> None:
     assert r.json()["detail"] == "The user with this email already exists in the system"
 
 
-def test_update_user(client: TestClient, superuser_token_headers: dict[str, str], db: Session) -> None:
+def test_update_user(client: TestClient, superuser_token_headers: dict[str, str], session: Session) -> None:
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
+    user = crud.create_user(session=session, user_create=user_in)
 
     data = {"full_name": "Updated_full_name"}
     r = client.patch(
@@ -349,8 +349,8 @@ def test_update_user(client: TestClient, superuser_token_headers: dict[str, str]
     assert updated_user["full_name"] == "Updated_full_name"
 
     user_query = select(User).where(User.email == username)
-    user_db = db.exec(user_query).first()
-    db.refresh(user_db)
+    user_db = session.exec(user_query).first()
+    session.refresh(user_db)
     assert user_db
     assert user_db.full_name == "Updated_full_name"
 
@@ -366,16 +366,18 @@ def test_update_user_not_exists(client: TestClient, superuser_token_headers: dic
     assert r.json()["detail"] == "The user with this id does not exist in the system"
 
 
-def test_update_user_email_exists(client: TestClient, superuser_token_headers: dict[str, str], db: Session) -> None:
+def test_update_user_email_exists(
+    client: TestClient, superuser_token_headers: dict[str, str], session: Session
+) -> None:
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
+    user = crud.create_user(session=session, user_create=user_in)
 
     username2 = random_email()
     password2 = random_lower_string()
     user_in2 = UserCreate(email=username2, password=password2)
-    user2 = crud.create_user(session=db, user_create=user_in2)
+    user2 = crud.create_user(session=session, user_create=user_in2)
 
     data = {"email": user2.email}
     r = client.patch(
@@ -387,11 +389,11 @@ def test_update_user_email_exists(client: TestClient, superuser_token_headers: d
     assert r.json()["detail"] == "User with this email already exists"
 
 
-def test_delete_user_me(client: TestClient, db: Session) -> None:
+def test_delete_user_me(client: TestClient, session: Session) -> None:
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
+    user = crud.create_user(session=session, user_create=user_in)
     user_id = user.id
 
     login_data = {
@@ -410,11 +412,11 @@ def test_delete_user_me(client: TestClient, db: Session) -> None:
     assert r.status_code == 200
     deleted_user = r.json()
     assert deleted_user["message"] == "User deleted successfully"
-    result = db.exec(select(User).where(User.id == user_id)).first()
+    result = session.exec(select(User).where(User.id == user_id)).first()
     assert result is None
 
     user_query = select(User).where(User.id == user_id)
-    user_db = db.exec(user_query).first()
+    user_db = session.exec(user_query).first()
     assert user_db is None
 
 
@@ -428,11 +430,11 @@ def test_delete_user_me_as_superuser(client: TestClient, superuser_token_headers
     assert response["detail"] == "Super users are not allowed to delete themselves"
 
 
-def test_delete_user_super_user(client: TestClient, superuser_token_headers: dict[str, str], db: Session) -> None:
+def test_delete_user_super_user(client: TestClient, superuser_token_headers: dict[str, str], session: Session) -> None:
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
+    user = crud.create_user(session=session, user_create=user_in)
     user_id = user.id
     r = client.delete(
         f"{settings.API_V1_STR}/users/{user_id}",
@@ -441,7 +443,7 @@ def test_delete_user_super_user(client: TestClient, superuser_token_headers: dic
     assert r.status_code == 200
     deleted_user = r.json()
     assert deleted_user["message"] == "User deleted successfully"
-    result = db.exec(select(User).where(User.id == user_id)).first()
+    result = session.exec(select(User).where(User.id == user_id)).first()
     assert result is None
 
 
@@ -455,9 +457,9 @@ def test_delete_user_not_found(client: TestClient, superuser_token_headers: dict
 
 
 def test_delete_user_current_super_user_error(
-    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+    client: TestClient, superuser_token_headers: dict[str, str], session: Session
 ) -> None:
-    super_user = crud.get_user_by_email(session=db, email=settings.FIRST_SUPERUSER)
+    super_user = crud.get_user_by_email(session=session, email=settings.FIRST_SUPERUSER)
     assert super_user
     user_id = super_user.id
 
@@ -470,12 +472,12 @@ def test_delete_user_current_super_user_error(
 
 
 def test_delete_user_without_privileges(
-    client: TestClient, normal_user_token_headers: dict[str, str], db: Session
+    client: TestClient, normal_user_token_headers: dict[str, str], session: Session
 ) -> None:
     username = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=username, password=password)
-    user = crud.create_user(session=db, user_create=user_in)
+    user = crud.create_user(session=session, user_create=user_in)
 
     r = client.delete(
         f"{settings.API_V1_STR}/users/{user.id}",

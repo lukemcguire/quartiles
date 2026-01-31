@@ -127,7 +127,6 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D", "S101", "ANN", "BLE", "TRY", "INP001"]
-"app/api/tests/*" = ["D", "S101", "ANN", "BLE", "TRY", "INP001"]
 "app/services/tests/*" = ["D", "S101", "ANN", "BLE", "TRY", "INP001"]
 "backend/scripts/*" = ["S403"] # pickle is safe for trusted data
 "scripts/*" = ["S403"] # pickle is safe for trusted data

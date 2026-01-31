@@ -43,7 +43,7 @@ clean-build: ## Clean build artifacts
 # Docker
 # ==============================================================================
 .PHONY: docker-up
-docker-up: docker-build ## Start all Docker services (rebuilds first)
+docker-up: ## Start all Docker services (make sure to build first)
 	@docker compose up -d
 
 .PHONY: docker-down
@@ -68,20 +68,20 @@ backend-install: ## Install backend dependencies
 .PHONY: backend-test
 backend-test: ## Run fast backend tests (excludes slow tests)
 	@echo "Running fast backend tests..."
-	@uv run --directory backend python -m pytest tests -m "not slow" -v --cov=app --cov-report=xml
+	@ENVIRONMENT=test uv run --directory backend python -m pytest tests -m "not slow" -v --cov=app --cov-report=xml
 
 .PHONY: backend-test-full
 backend-test-full: ## Run all backend tests including slow ones
 	@echo "Running all backend tests..."
-	@uv run --directory backend python -m pytest tests -v --cov=app --cov-report=xml
+	@ENVIRONMENT=test uv run --directory backend python -m pytest tests -v --cov=app --cov-report=xml
 
 .PHONY: backend-check
 backend-check: ## Run backend code quality checks (ty + ruff)
 	@echo "Running backend type checks (ty)..."
 	@uv run --directory backend ty check
 	@echo "Running backend linting (ruff)..."
-	@uv run --directory backend ruff check app
-	@uv run --directory backend ruff format --check app
+	@uv run --directory backend ruff check
+	@uv run --directory backend ruff format --check
 
 .PHONY: backend-dev
 backend-dev: ## Start backend development server
@@ -159,7 +159,7 @@ frontend-build: ## Build frontend for production
 .PHONY: frontend-lint
 frontend-lint: ## Lint frontend code
 	@echo "Linting frontend code..."
-	@bunx biome check --write --no-errors-on-unmatched frontend/
+	@bunx biome check --write --no-errors-on-unmatched
 
 .PHONY: frontend-test
 frontend-test: ## Run frontend tests with Playwright

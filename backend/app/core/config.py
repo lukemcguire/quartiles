@@ -2,6 +2,7 @@
 
 import secrets
 import warnings
+from pathlib import Path
 from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
@@ -14,6 +15,23 @@ from pydantic import (
     model_validator,
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _get_env_file_path() -> Path:
+    """Get the absolute path to the .env file.
+
+    The .env file is located at the project root (two levels up from this file).
+    Using an absolute path ensures the env file is found regardless of the
+    current working directory when the application or tests run.
+
+    Returns:
+        Path: Absolute path to the .env file at the project root.
+    """
+    # This file is at backend/app/core/config.py
+    # Project root is two levels up from 'backend' directory
+    # backend/app/core/config.py -> backend/app/core -> backend/app -> backend -> project_root
+    config_dir = Path(__file__).parent
+    return config_dir.parent.parent.parent / ".env"
 
 
 def parse_cors(v: Any) -> list[str] | str:  # noqa: ANN401
@@ -39,8 +57,8 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     model_config = SettingsConfigDict(
-        # Use top level .env file (one level above ./backend/)
-        env_file="../.env",
+        # Use absolute path to .env file at project root
+        env_file=_get_env_file_path(),
         env_ignore_empty=True,
         extra="ignore",
     )

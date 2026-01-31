@@ -23,7 +23,7 @@ def test_get_current_user_missing_token(client: TestClient) -> None:
     assert response.status_code in (401, 403)
 
 
-def test_get_current_active_superuser_normal_user(client: TestClient, db) -> None:
+def test_get_current_active_superuser_normal_user(client: TestClient, session) -> None:
     """Test normal user cannot access superuser endpoints."""
     from app import crud
     from app.core.config import settings
@@ -35,7 +35,7 @@ def test_get_current_active_superuser_normal_user(client: TestClient, db) -> Non
     email = random_email()
     password = random_lower_string()
     user_in = UserCreate(email=email, password=password, is_superuser=False)
-    crud.create_user(session=db, user_create=user_in)
+    crud.create_user(session=session, user_create=user_in)
 
     headers = user_authentication_headers(client=client, email=email, password=password)
 

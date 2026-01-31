@@ -2,13 +2,146 @@
 
 import json
 from datetime import UTC, date, datetime
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
+import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from app.models import GameSession, Player, Puzzle
+
+# --- Fixtures ---
+
+
+@pytest.fixture(scope="session")
+def sample_tiles() -> list[dict]:
+    """Create sample tile data.
+
+    Returns:
+        list[dict]: Sample tile data with id and letters.
+    """
+    return [
+        {"id": 0, "letters": "CH"},
+        {"id": 1, "letters": "UB"},
+        {"id": 2, "letters": "BY"},
+        {"id": 3, "letters": "PE"},
+        {"id": 4, "letters": "NG"},
+        {"id": 5, "letters": "UI"},
+        {"id": 6, "letters": "NI"},
+        {"id": 7, "letters": "CO"},
+        {"id": 8, "letters": "RN"},
+        {"id": 9, "letters": "WA"},
+        {"id": 10, "letters": "LF"},
+        {"id": 11, "letters": "LS"},
+        {"id": 12, "letters": "DO"},
+        {"id": 13, "letters": "PH"},
+        {"id": 14, "letters": "IN"},
+        {"id": 15, "letters": "AL"},
+        {"id": 16, "letters": "ES"},
+        {"id": 17, "letters": "KA"},
+        {"id": 18, "letters": "TE"},
+        {"id": 19, "letters": "ST"},
+    ]
+
+
+@pytest.fixture
+def sample_puzzle(session: Session, sample_tiles: list[dict]) -> Puzzle:
+    """Create a sample puzzle in the database.
+
+    Args:
+        session: Database session.
+        sample_tiles: Sample tile data.
+
+    Returns:
+        Puzzle: A sample puzzle with test data.
+    """
+    import uuid
+
+    quartile_words = ["CHUBBY", "PENGUIN", "UNICORN", "WALRUS", "NARWHAL"]
+    valid_words = [
+        "CHUBBY",
+        "PENGUIN",
+        "UNICORN",
+        "WALRUS",
+        "NARWHAL",
+        "PEN",
+        "GUIN",
+        "CORN",
+        "HORN",
+        "WAL",
+        "RUS",
+    ]
+
+    # Use a fixed test date that won't conflict with the puzzle scheduler
+    # The scheduler creates puzzles for today, so use a date in the past
+    test_date = date(2024, 1, 1)
+
+    puzzle = Puzzle(
+        id=uuid.uuid4(),
+        date=test_date,
+        tiles_json=json.dumps(sample_tiles),
+        quartile_words_json=json.dumps(quartile_words),
+        valid_words_json=json.dumps(valid_words),
+        total_available_points=150,
+    )
+    session.add(puzzle)
+    session.commit()
+    session.refresh(puzzle)
+    return puzzle
+
+
+@pytest.fixture
+def sample_player(session: Session) -> Player:
+    """Create a sample player in the database.
+
+    Args:
+        session: Database session.
+
+    Returns:
+        Player: A sample player with test data.
+    """
+    import uuid
+
+    player = Player(
+        id=uuid.uuid4(),
+        display_name="TestPlayer",
+        device_fingerprint="test-device-123",
+    )
+    session.add(player)
+    session.commit()
+    session.refresh(player)
+    return player
+
+
+@pytest.fixture
+def sample_session(session: Session, sample_puzzle: Puzzle, sample_player: Player) -> GameSession:
+    """Create a sample game session in the database.
+
+    Args:
+        session: Database session.
+        sample_puzzle: Sample puzzle.
+        sample_player: Sample player.
+
+    Returns:
+        GameSession: A sample game session with test data.
+    """
+    import uuid
+
+    game_session = GameSession(
+        id=uuid.uuid4(),
+        puzzle_id=sample_puzzle.id,
+        player_id=sample_player.id,
+        start_time=datetime.now(UTC),
+        final_score=0,
+        hints_used=0,
+        hint_penalty_ms=0,
+        words_found_json="[]",
+    )
+    session.add(game_session)
+    session.commit()
+    session.refresh(game_session)
+    return game_session
 
 
 class TestNameGenerator:
@@ -55,7 +188,6 @@ class TestGameStart:
         # Mock ensure_puzzle_exists_for_date to return our sample puzzle
         with patch(
             "app.api.routes.game.ensure_puzzle_exists_for_date",
-            new_callable=AsyncMock,
             return_value=sample_puzzle,
         ):
             response = client.post(
@@ -85,7 +217,6 @@ class TestGameStart:
         """Test starting a game with a returning player."""
         with patch(
             "app.api.routes.game.ensure_puzzle_exists_for_date",
-            new_callable=AsyncMock,
             return_value=sample_puzzle,
         ):
             response = client.post(
@@ -128,7 +259,6 @@ class TestGameStart:
 
         with patch(
             "app.api.routes.game.ensure_puzzle_exists_for_date",
-            new_callable=AsyncMock,
             return_value=sample_puzzle,
         ):
             response = client.post(
@@ -193,6 +323,7 @@ class TestWordValidation:
         client: TestClient,
         sample_session: GameSession,
         sample_puzzle: Puzzle,
+        session: Session,
     ) -> None:
         """Test validating a word that was already found."""
         valid_words = json.loads(sample_puzzle.valid_words_json)
@@ -201,9 +332,8 @@ class TestWordValidation:
         # Add word to found words
         sample_session.words_found_json = json.dumps([test_word])
         sample_session.final_score = 10
-
-        # Get session from client's db
-        # Note: In real test, we'd need to commit this change
+        session.add(sample_session)
+        session.commit()
 
         response = client.post(
             f"/api/v1/game/sessions/{sample_session.id}/word",
@@ -390,7 +520,6 @@ class TestPuzzleEndpoints:
         """Test getting today's puzzle."""
         with patch(
             "app.api.routes.puzzle.ensure_puzzle_exists_for_date",
-            new_callable=AsyncMock,
             return_value=sample_puzzle,
         ):
             response = client.get("/api/v1/puzzle/today")
@@ -450,7 +579,7 @@ class TestLeaderboardEndpoints:
         sample_player: Player,
         session: Session,
     ) -> None:
-        """Test getting today's leaderboard with entries."""
+        """Test getting the leaderboard for the sample puzzle's date."""
         from app.models import LeaderboardEntry
 
         entry1 = LeaderboardEntry(
@@ -467,7 +596,8 @@ class TestLeaderboardEndpoints:
         session.add(entry2)
         session.commit()
 
-        response = client.get("/api/v1/leaderboard/today")
+        # Query the leaderboard for the sample puzzle's date
+        response = client.get(f"/api/v1/leaderboard/{sample_puzzle.date}")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()

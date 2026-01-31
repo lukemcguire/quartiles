@@ -1,47 +1,56 @@
 # Frontend Dockerfile
-# Multi-stage build: npm build + nginx serve
+# Multi-stage build: bun workspace build + nginx serve
+
+# Install bun in all stages
+FROM oven/bun:1-alpine AS bun-base
 
 # Development stage
-FROM node:20-alpine AS development
+FROM bun-base AS development
 
-WORKDIR /app/frontend
+WORKDIR /app
 
-# Copy package files (only frontend files, not root workspace package.json)
-COPY frontend/package.json frontend/package-lock.json ./
+# Copy workspace files (root package.json and bun.lock)
+COPY package.json bun.lock ./
+COPY frontend/package.json ./frontend/
 
-# Install dependencies
-RUN npm ci
+# Install dependencies using bun workspace
+RUN bun install
 
 # Copy frontend source code
-COPY frontend/ ./
+COPY frontend/ ./frontend/
+
+WORKDIR /app/frontend
 
 # Expose Vite dev server port
 EXPOSE 5173
 
 # Development command
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+CMD ["bun", "run", "dev", "--", "--host", "0.0.0.0"]
 
 
 # Build stage
-FROM node:20-alpine AS builder
+FROM bun-base AS builder
 
-WORKDIR /app/frontend
+WORKDIR /app
 
-# Copy package files (only frontend files, not root workspace package.json)
-COPY frontend/package.json frontend/package-lock.json ./
+# Copy workspace files (root package.json and bun.lock)
+COPY package.json bun.lock ./
+COPY frontend/package.json ./frontend/
 
-# Install dependencies
-RUN npm ci
+# Install dependencies using bun workspace
+RUN bun install
 
 # Copy frontend source code
-COPY frontend/ ./
+COPY frontend/ ./frontend/
+
+WORKDIR /app/frontend
 
 # Build argument for API URL
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 
 # Build the application
-RUN npm run build
+RUN bun run build
 
 
 # Production stage

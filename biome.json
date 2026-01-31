@@ -9,12 +9,12 @@
     "ignoreUnknown": true,
     "includes": [
       "frontend/**",
-      "!frontend/dist/**",
-      "!frontend/node_modules/**",
+      "!frontend/dist",
+      "!frontend/node_modules",
       "!frontend/src/routeTree.gen.ts",
-      "!frontend/src/client/**",
-      "!frontend/src/components/ui/**",
-      "!frontend/playwright-report/**",
+      "!frontend/src/client",
+      "!frontend/src/components/ui",
+      "!frontend/playwright-report",
       "!frontend/playwright.config.ts"
     ]
   },

@@ -14,5 +14,5 @@ api_router.include_router(puzzle.router)
 api_router.include_router(leaderboard.router)
 
 
-if settings.ENVIRONMENT == "local":
+if settings.ENVIRONMENT in ("local", "test"):
     api_router.include_router(private.router)

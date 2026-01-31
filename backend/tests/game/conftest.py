@@ -122,4 +122,6 @@ def generated_puzzle(real_dictionary: Dictionary) -> Puzzle:
     Returns:
         A Puzzle instance generated from the real dictionary.
     """
-    return generate_puzzle(real_dictionary, excluded_quartiles=set())
+    puzzle = generate_puzzle(real_dictionary, excluded_quartiles=set())
+    assert puzzle is not None, "Failed to generate puzzle"
+    return puzzle
