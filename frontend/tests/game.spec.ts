@@ -1,6 +1,82 @@
+import fs from "node:fs"
 import { expect, test } from "@playwright/test"
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page, context }) => {
+  // Restore access_token from auth setup
+  let accessToken = ""
+  try {
+    accessToken = fs.readFileSync("playwright/.auth/access_token.txt", "utf-8")
+  } catch (_e) {
+    // File doesn't exist, continue without token
+  }
+
+  // Use page.addInitScript to set the token on every page load/navigation
+  // This ensures the token persists across reloads
+  await page.addInitScript(
+    ({ token }) => {
+      localStorage.removeItem("device_fingerprint")
+      localStorage.removeItem("quartiles_game_session")
+      if (token) {
+        localStorage.setItem("access_token", token)
+      }
+    },
+    { token: accessToken },
+  )
+
+  // Mock the puzzle API at the context level (called before game start)
+  await context.route("**/api/v1/puzzle/today", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: `test-puzzle-${Date.now()}`,
+        date: new Date().toISOString().split("T")[0],
+        tiles: Array.from({ length: 20 }, (_, i) => ({
+          id: i,
+          letters:
+            [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "F",
+              "G",
+              "H",
+              "I",
+              "J",
+              "K",
+              "L",
+              "M",
+              "N",
+              "O",
+              "P",
+              "Q",
+              "R",
+              "S",
+              "T",
+            ][i % 20] + String.fromCharCode(65 + (i % 26)),
+        })),
+        total_available_points: 100,
+      }),
+    })
+  })
+
+  // Mock the game start API at the context level
+  await context.route("**/api/v1/game/start", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        session_id: `test-session-${Date.now()}`,
+        player_id: `test-player-${Date.now()}`,
+        display_name: "Test Player",
+        // tiles removed - now come from puzzle endpoint
+        already_played: false,
+      }),
+    })
+  })
+
   // Navigate to game page (authenticated user required)
   await page.goto("/game")
 })
@@ -331,6 +407,8 @@ test("localStorage: Session mismatch does not restore state", async ({
     const stored = localStorage.getItem("quartiles_game_session")
     if (stored) {
       const parsed = JSON.parse(stored)
+      // The component now checks if stored.sessionId matches gameSession.sessionId
+      // Change to a different session ID to simulate mismatch
       parsed.sessionId = "different-session-id"
       localStorage.setItem("quartiles_game_session", JSON.stringify(parsed))
     }
@@ -342,7 +420,7 @@ test("localStorage: Session mismatch does not restore state", async ({
   // Wait for game to load again
   await page.waitForSelector('[data-testid="game-board"]')
 
-  // Verify no tiles are selected (session mismatch)
+  // Verify no tiles are selected (session mismatch - new session created)
   await expect(page.locator('[aria-pressed="true"]')).toHaveCount(0)
 })
 
@@ -370,7 +448,6 @@ test("localStorage: State is cleared when game is completed", async ({
     // localStorage gets cleared
     const stored = localStorage.getItem("quartiles_game_session")
     if (stored) {
-      const _parsed = JSON.parse(stored)
       // Modify to simulate we're in a completed state check
       localStorage.setItem("test_complete_simulation", "true")
     }

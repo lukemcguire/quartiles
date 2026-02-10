@@ -1,3 +1,5 @@
+export type { AlreadyPlayedProps } from "./AlreadyPlayed"
+export { AlreadyPlayed } from "./AlreadyPlayed"
 export type { FoundWord, FoundWordsListProps } from "./FoundWordsList"
 export { FoundWordsList } from "./FoundWordsList"
 export { Game } from "./Game"

@@ -10,14 +10,17 @@ export class GameService {
      * Start Game
      * Start a new game session.
      *
-     * - Gets today's puzzle (creates if doesn't exist)
+     * - Gets the puzzle for the specified puzzle_id (must exist)
      * - Gets or creates player based on device_fingerprint/player_id
-     * - Checks if player already completed today's puzzle
+     * - Resumes uncompleted session if exists
+     * - Checks if player already completed this puzzle
      * - Creates game session in database with server-recorded start_time
-     * - Returns puzzle tiles only (NOT valid words - security)
+     *
+     * Raises:
+     * HTTPException: If puzzle_id is malformed or puzzle not found.
      *
      * Returns:
-     * GameStartResponse: Session info, player data, and puzzle tiles.
+     * GameStartResponse: Session info and player data.
      * @param data The data for the request.
      * @param data.requestBody
      * @returns GameStartResponse Successful Response

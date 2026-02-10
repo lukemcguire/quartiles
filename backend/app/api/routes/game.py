@@ -22,7 +22,6 @@ from app.models import (
     Puzzle,
 )
 from app.services.name_generator import generate_player_name
-from app.services.puzzle_scheduler import ensure_puzzle_exists_for_date
 
 router = APIRouter(prefix="/game", tags=["game"])
 
@@ -53,6 +52,7 @@ class GameStartRequest(BaseModel):
 
     device_fingerprint: str
     player_id: str | None = None  # UUID string for returning players
+    puzzle_id: str  # UUID string - required, from /puzzle endpoint
 
 
 class GameStartResponse(BaseModel):
@@ -61,9 +61,9 @@ class GameStartResponse(BaseModel):
     session_id: str  # UUID as string
     player_id: str  # UUID as string (stable identifier)
     display_name: str  # AdjectiveNoun format for display
-    tiles: list[TileSchema]
     already_played: bool
     previous_result: PreviousResultSchema | None = None
+    # NOTE: tiles removed - client gets these from /puzzle endpoint
     # NOTE: valid_words intentionally NOT included (security)
 
 
@@ -261,25 +261,50 @@ async def start_game(
 ) -> GameStartResponse:
     """Start a new game session.
 
-    - Gets today's puzzle (creates if doesn't exist)
+    - Gets the puzzle for the specified puzzle_id (must exist)
     - Gets or creates player based on device_fingerprint/player_id
-    - Checks if player already completed today's puzzle
+    - Resumes uncompleted session if exists
+    - Checks if player already completed this puzzle
     - Creates game session in database with server-recorded start_time
-    - Returns puzzle tiles only (NOT valid words - security)
+
+    Raises:
+        HTTPException: If puzzle_id is malformed or puzzle not found.
 
     Returns:
-        GameStartResponse: Session info, player data, and puzzle tiles.
+        GameStartResponse: Session info and player data.
     """
-    from datetime import UTC, datetime
+    # Validate puzzle_id
+    try:
+        puzzle_uuid = uuid.UUID(request.puzzle_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid puzzle_id")
 
-    # Get or create today's puzzle
-    today = datetime.now(UTC).date()
-    puzzle = ensure_puzzle_exists_for_date(today, db)
+    # Fetch puzzle directly
+    puzzle = db.get(Puzzle, puzzle_uuid)
+    if not puzzle:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Puzzle not found")
 
     # Get or create player
     player = _get_or_create_player(db, request.device_fingerprint, request.player_id)
 
-    # Check if already played
+    # Check for uncompleted session (resume logic)
+    uncompleted_session = db.exec(
+        select(GameSession)
+        .where(GameSession.player_id == player.id)
+        .where(GameSession.puzzle_id == puzzle.id)
+        .where(GameSession.completed_at.is_(None))  # type: ignore[attr-defined]
+    ).first()
+
+    if uncompleted_session:
+        # Resume existing session
+        return GameStartResponse(
+            session_id=str(uncompleted_session.id),
+            player_id=str(player.id),
+            display_name=player.display_name,
+            already_played=False,
+        )
+
+    # Check if already played (completed session)
     existing_session = _get_existing_session(db, player.id, puzzle.id)
     if existing_session:
         # Return previous result
@@ -301,7 +326,6 @@ async def start_game(
             session_id=str(existing_session.id),
             player_id=str(player.id),
             display_name=player.display_name,
-            tiles=_parse_tiles_json(puzzle.tiles_json),
             already_played=True,
             previous_result=PreviousResultSchema(
                 final_score=existing_session.final_score,
@@ -325,7 +349,6 @@ async def start_game(
         session_id=str(session.id),
         player_id=str(player.id),
         display_name=player.display_name,
-        tiles=_parse_tiles_json(puzzle.tiles_json),
         already_played=False,
     )
 

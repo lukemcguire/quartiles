@@ -185,28 +185,22 @@ class TestGameStart:
 
     def test_start_new_game(self, client: TestClient, sample_puzzle: Puzzle) -> None:
         """Test starting a new game session."""
-        # Mock ensure_puzzle_exists_for_date to return our sample puzzle
-        with patch(
-            "app.api.routes.game.ensure_puzzle_exists_for_date",
-            return_value=sample_puzzle,
-        ):
-            response = client.post(
-                "/api/v1/game/start",
-                json={"device_fingerprint": "test-device-123"},
-            )
+        response = client.post(
+            "/api/v1/game/start",
+            json={"device_fingerprint": "test-device-123", "puzzle_id": str(sample_puzzle.id)},
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert "session_id" in data
         assert "player_id" in data
         assert "display_name" in data
-        assert "tiles" in data
+        # tiles no longer in response - client gets them from /puzzle endpoint
+        assert "tiles" not in data
         assert data["already_played"] is False
         assert data["previous_result"] is None
         # Verify valid_words is NOT in response
         assert "valid_words" not in data
-        # Verify tiles are present
-        assert len(data["tiles"]) == 20
 
     def test_start_game_returning_player(
         self,
@@ -215,17 +209,14 @@ class TestGameStart:
         sample_player: Player,
     ) -> None:
         """Test starting a game with a returning player."""
-        with patch(
-            "app.api.routes.game.ensure_puzzle_exists_for_date",
-            return_value=sample_puzzle,
-        ):
-            response = client.post(
-                "/api/v1/game/start",
-                json={
-                    "device_fingerprint": sample_player.device_fingerprint,
-                    "player_id": str(sample_player.id),
-                },
-            )
+        response = client.post(
+            "/api/v1/game/start",
+            json={
+                "device_fingerprint": sample_player.device_fingerprint,
+                "player_id": str(sample_player.id),
+                "puzzle_id": str(sample_puzzle.id),
+            },
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -257,17 +248,14 @@ class TestGameStart:
         session.add(completed_session)
         session.commit()
 
-        with patch(
-            "app.api.routes.game.ensure_puzzle_exists_for_date",
-            return_value=sample_puzzle,
-        ):
-            response = client.post(
-                "/api/v1/game/start",
-                json={
-                    "device_fingerprint": sample_player.device_fingerprint,
-                    "player_id": str(sample_player.id),
-                },
-            )
+        response = client.post(
+            "/api/v1/game/start",
+            json={
+                "device_fingerprint": sample_player.device_fingerprint,
+                "player_id": str(sample_player.id),
+                "puzzle_id": str(sample_puzzle.id),
+            },
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()

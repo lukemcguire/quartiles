@@ -1,12 +1,19 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
 
-import { GameService } from "@/client"
+import { GameService, PuzzleService } from "@/client"
+
+export interface Puzzle {
+  id: string
+  date: string
+  tiles: Array<{ id: number; letters: string }>
+  totalAvailablePoints: number
+}
 
 export interface GameSession {
   sessionId: string
   playerId: string
   displayName: string
-  tiles: Array<{ id: number; letters: string }>
+  // tiles removed - handled by puzzle query
   alreadyPlayed: boolean
   previousResult?: {
     finalScore: number
@@ -32,6 +39,31 @@ export interface Hint {
   quartilesRemaining: number
 }
 
+export const usePuzzleByDate = (puzzleDate?: string) => {
+  return useQuery({
+    queryKey: ["puzzle", puzzleDate || "today"],
+    queryFn: async () => {
+      if (puzzleDate) {
+        const response = await PuzzleService.getPuzzleByDate({ puzzleDate })
+        return {
+          id: response.id,
+          date: response.date,
+          tiles: response.tiles,
+          totalAvailablePoints: response.total_available_points,
+        }
+      }
+      const response = await PuzzleService.getTodaysPuzzle()
+      return {
+        id: response.id,
+        date: response.date,
+        tiles: response.tiles,
+        totalAvailablePoints: response.total_available_points,
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes - cacheable!
+  })
+}
+
 const getDeviceFingerprint = (): string => {
   let fingerprint = localStorage.getItem("device_fingerprint")
   if (!fingerprint) {
@@ -42,18 +74,18 @@ const getDeviceFingerprint = (): string => {
 }
 
 export const useGameStart = () => {
-  return useMutation<GameSession, Error, void>({
-    mutationFn: async () => {
+  return useMutation<GameSession, Error, { puzzleId: string }>({
+    mutationFn: async ({ puzzleId }) => {
       const response = await GameService.startGame({
         requestBody: {
           device_fingerprint: getDeviceFingerprint(),
+          puzzle_id: puzzleId,
         },
       })
       return {
         sessionId: response.session_id,
         playerId: response.player_id,
         displayName: response.display_name,
-        tiles: response.tiles,
         alreadyPlayed: response.already_played,
         previousResult: response.previous_result
           ? {

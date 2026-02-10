@@ -73,10 +73,14 @@ export const GameStartRequestSchema = {
                 }
             ],
             title: 'Player Id'
+        },
+        puzzle_id: {
+            type: 'string',
+            title: 'Puzzle Id'
         }
     },
     type: 'object',
-    required: ['device_fingerprint'],
+    required: ['device_fingerprint', 'puzzle_id'],
     title: 'GameStartRequest',
     description: 'Request to start a new game session.'
 } as const;
@@ -95,13 +99,6 @@ export const GameStartResponseSchema = {
             type: 'string',
             title: 'Display Name'
         },
-        tiles: {
-            items: {
-                '$ref': '#/components/schemas/TileSchema'
-            },
-            type: 'array',
-            title: 'Tiles'
-        },
         already_played: {
             type: 'boolean',
             title: 'Already Played'
@@ -118,7 +115,7 @@ export const GameStartResponseSchema = {
         }
     },
     type: 'object',
-    required: ['session_id', 'player_id', 'display_name', 'tiles', 'already_played'],
+    required: ['session_id', 'player_id', 'display_name', 'already_played'],
     title: 'GameStartResponse',
     description: 'Response when starting a new game.'
 } as const;

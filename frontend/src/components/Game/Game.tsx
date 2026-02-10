@@ -4,10 +4,13 @@ import {
   type GameSession,
   useGameStart,
   useGetHint,
+  usePuzzleByDate,
   useSubmitGame,
   useValidateWord,
 } from "@/hooks/useGame"
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation"
+import { getLocalPuzzleDate } from "@/utils/timezone"
+import { AlreadyPlayed } from "./AlreadyPlayed"
 import { type FoundWord, FoundWordsList } from "./FoundWordsList"
 import { GameBoard } from "./GameBoard"
 import { GameInput } from "./GameInput"
@@ -20,7 +23,7 @@ const SESSION_VALIDITY_MS = 24 * 60 * 60 * 1000 // 24 hours
 interface StoredGameState {
   sessionId: string
   timestamp: number
-  tiles: Array<{ id: number; letters: string }>
+  puzzleId: string
   foundWords: FoundWord[]
   selectedTileIds: number[]
   timeElapsed: number
@@ -30,6 +33,14 @@ interface StoredGameState {
 const MAX_HINTS = 5
 
 export function Game() {
+  // Fetch puzzle first
+  const puzzleDate = getLocalPuzzleDate()
+  const {
+    data: puzzle,
+    isLoading: puzzleLoading,
+    error: puzzleError,
+  } = usePuzzleByDate(puzzleDate)
+
   // Game session state
   const [gameSession, setGameSession] = useState<GameSession | null>(null)
   const [foundWords, setFoundWords] = useState<FoundWord[]>([])
@@ -46,18 +57,23 @@ export function Game() {
   const submitGameMutation = useSubmitGame()
   const getHintMutation = useGetHint()
 
-  // Initialize game
+  // Initialize game - fetch puzzle first, then create session
   useEffect(() => {
-    gameStartMutation.mutate(undefined, {
-      onSuccess: (session) => {
-        setGameSession(session)
-        // Restore previous session if available
-        if (session.previousResult) {
-          // Could show previous results here
-        }
-      },
-    })
-  }, [gameStartMutation.mutate])
+    if (puzzle && !gameSession) {
+      gameStartMutation.mutate(
+        { puzzleId: puzzle.id },
+        {
+          onSuccess: (session) => {
+            setGameSession(session)
+            // Restore previous session if available
+            if (session.previousResult) {
+              // Could show previous results here
+            }
+          },
+        },
+      )
+    }
+  }, [puzzle, gameSession, gameStartMutation.mutate])
 
   // Timer
   useEffect(() => {
@@ -72,11 +88,11 @@ export function Game() {
 
   // localStorage: Save state on changes
   useEffect(() => {
-    if (gameSession && !showCompleteDialog) {
+    if (gameSession && puzzle && !showCompleteDialog) {
       const state: StoredGameState = {
         sessionId: gameSession.sessionId,
         timestamp: Date.now(),
-        tiles: gameSession.tiles,
+        puzzleId: puzzle.id,
         foundWords,
         selectedTileIds,
         timeElapsed,
@@ -90,6 +106,7 @@ export function Game() {
     }
   }, [
     gameSession,
+    puzzle,
     foundWords,
     selectedTileIds,
     timeElapsed,
@@ -136,12 +153,12 @@ export function Game() {
 
   // Build current word from selected tiles
   const currentWord = useMemo(() => {
-    if (!gameSession || selectedTileIds.length === 0) return ""
+    if (!puzzle || selectedTileIds.length === 0) return ""
 
     return selectedTileIds
-      .map((id) => gameSession.tiles.find((t) => t.id === id)?.letters || "")
+      .map((id) => puzzle.tiles.find((t) => t.id === id)?.letters || "")
       .join("")
-  }, [gameSession, selectedTileIds])
+  }, [puzzle, selectedTileIds])
 
   // Get used tile IDs
   const usedTileIds = useMemo(() => {
@@ -223,16 +240,16 @@ export function Game() {
 
   // Keyboard navigation (must be after handleClear and handleSubmit are defined)
   const { focusedIndex, keyHandlers } = useKeyboardNavigation({
-    tileCount: gameSession?.tiles.length ?? 20,
+    tileCount: puzzle?.tiles.length ?? 20,
     columns: 4,
     onTileSelect: (index) => {
-      if (gameSession) {
-        handleTileClick(gameSession.tiles[index].id)
+      if (puzzle) {
+        handleTileClick(puzzle.tiles[index].id)
       }
     },
     onClear: handleClear,
     onSubmit: handleSubmit,
-    disabled: showCompleteDialog || !gameSession,
+    disabled: showCompleteDialog || !puzzle,
   })
 
   // Request hint
@@ -255,7 +272,7 @@ export function Game() {
   }, [foundWords])
 
   // Loading state
-  if (gameStartMutation.isPending) {
+  if (puzzleLoading || gameStartMutation.isPending) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] gap-6">
         <div className="skeleton h-[400px] w-[400px] rounded-2xl" />
@@ -265,13 +282,33 @@ export function Game() {
   }
 
   // Error state
-  if (gameStartMutation.error) {
+  if (puzzleError || gameStartMutation.error) {
     return (
       <div className="alert alert-error max-w-md mx-auto shadow-lg">
         <AlertCircle className="h-4 w-4" />
         <span>Failed to load game. Please refresh the page to try again.</span>
       </div>
     )
+  }
+
+  // Already played state
+  if (gameSession?.alreadyPlayed && gameSession.previousResult) {
+    return (
+      <div className="flex flex-col items-center gap-6 w-full">
+        <AlreadyPlayed
+          finalScore={gameSession.previousResult.finalScore}
+          solveTimeMs={gameSession.previousResult.solveTimeMs}
+          wordsFound={gameSession.previousResult.wordsFound}
+          leaderboardRank={gameSession.previousResult.leaderboardRank}
+          className="w-full"
+        />
+      </div>
+    )
+  }
+
+  // No puzzle data
+  if (!puzzle) {
+    return null
   }
 
   // No game session
@@ -299,7 +336,7 @@ export function Game() {
         {/* Left: Game Board and Input */}
         <div className="flex-1 flex flex-col items-center gap-6 w-full">
           <GameBoard
-            tiles={gameSession.tiles}
+            tiles={puzzle.tiles}
             selectedTileIds={selectedTileIds}
             usedTileIds={usedTileIds}
             onTileClick={handleTileClick}

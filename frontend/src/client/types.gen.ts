@@ -15,6 +15,7 @@ export type Body_login_login_access_token = {
 export type GameStartRequest = {
     device_fingerprint: string;
     player_id?: (string | null);
+    puzzle_id: string;
 };
 
 /**
@@ -24,7 +25,6 @@ export type GameStartResponse = {
     session_id: string;
     player_id: string;
     display_name: string;
-    tiles: Array<TileSchema>;
     already_played: boolean;
     previous_result?: (PreviousResultSchema | null);
 };
